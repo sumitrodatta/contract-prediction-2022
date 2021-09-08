@@ -1,0 +1,213 @@
+---
+title: "NBA Free Agency Contract Prediction 2022"
+author: "Sumitro Datta"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: pdf_document
+header-includes:
+   - \usepackage{float}
+   - \usepackage{titling}
+   - \setlength{\droptitle}{-5em} 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE,
+                      echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+# Introduction
+
+# Methods/Analysis
+
+## Loading Packages
+
+Let's start by loading required packages.
+```{r load_pkgs, results="hide"}
+if(!require(tidyverse)) 
+  install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(tidymodels)) 
+  install.packages("tidymodels", repos = "http://cran.us.r-project.org")
+#for cleaning variable names
+if(!require(janitor)) 
+  install.packages("janitor", repos = "http://cran.us.r-project.org")
+#for multinomial regression
+if(!require(glmnet)) 
+  install.packages("glmnet", repos = "http://cran.us.r-project.org")
+#ranger is random forest algorithm wrapper
+if(!require(ranger)) 
+  install.packages("ranger", repos = "http://cran.us.r-project.org")
+#kernlab is svm kernel wrapper
+if(!require(kernlab)) 
+  install.packages("kernlab", repos = "http://cran.us.r-project.org")
+#for variable importance
+if(!require(vip)) 
+  install.packages("vip", repos = "http://cran.us.r-project.org")
+#zoo allows rolling operations
+if(!require(zoo))
+  install.packages("zoo", repos = "http://cran.us.r-project.org")
+#matrix stats
+if(!require(matrixStats)) 
+  install.packages("matrixStats", repos = "http://cran.us.r-project.org")
+#rpart.plot shows the decision tree of an rpart result
+if(!require(rpart.plot)) 
+  install.packages("rpart.plot", repos = "http://cran.us.r-project.org")
+#kableExtra allows more customization of tables
+if(!require(kableExtra)) 
+  install.packages("kableExtra")
+if(!require(RColorBrewer)) 
+  install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
+#for dark background plots
+if(!require(ggdark)) 
+  install.packages("ggdark", repos = "http://cran.us.r-project.org")
+#easy formatting of numbers as currency & percent
+if(!require(formattable)) 
+  install.packages("ggdark", repos = "http://cran.us.r-project.org")
+
+```
+
+## Importing the Data
+
+For the statistical data, I've scraped total and advanced stats from Basketball-Reference and stored them in .csv files. This was actually part of a larger project to scrape complete statistics for teams, players and awards (the Kaggle dataset resides [here](https://www.kaggle.com/sumitrodatta/nba-aba-baa-stats)). To my knowledge, my dataset is unique in that it includes BAA stats and ABA stats, which is not really of use here. 
+
+The advanced stats I kept were cumulative (offensive win shares, defensive win shares and value over replacement player). For players who played on multiple teams in one season, I kept their total stats and discarded the team-specific season portions. There was an initial desire to use totals to bake in availability/body fragility, but the shortened seasons would cause the model to declare all players to be fragile and underestimate their contract.
+
+In the previous iteration of this project, we scaled games played and games started to a normal distribution due to fluctuations in games played between seasons caused by the COVID-19 pandemic. We will convert the games started to a percentage of games played and we will change the games played to a percentage of maximum playable games. This maximum will differ for players who played for multiple teams in one season.
+```{r load_stats}
+#specify columns because otherwise birth year is read as logical
+cols_for_stats=cols(
+  .default = col_double(),
+  player = col_character(),
+  hof = col_logical(),
+  pos = col_character(),
+  lg = col_character(),
+  tm = col_character()
+)
+
+advanced<-read_csv("Data/Advanced.csv",col_types = cols_for_stats) %>%
+  select(seas_id:mp,ows:ws,vorp)
+totals<-read_csv("Data/Player Totals.csv",col_types = cols_for_stats)
+#max games per season for players on multiple teams
+max_games_tots=totals %>% filter(tm=="TOT") %>% group_by(season,lg,tm) %>%
+  summarize(max_games_tot=max(g,na.rm = TRUE)) %>% ungroup()
+#max games per season for players on single team
+max_games=totals %>% filter(tm !="TOT") %>% group_by(season,lg) %>%
+  summarize(max_games_non_tot=max(g,na.rm = TRUE)) %>% ungroup()
+#coalesce above two into one column in totals df
+totals_enhanced=left_join(totals,max_games_tots) %>% left_join(.,max_games) %>%
+  mutate(max_games_playable=coalesce(max_games_tot,max_games_non_tot)) %>% 
+  select(-c(max_games_non_tot,max_games_tot))
+advanced_and_totals<-left_join(totals_enhanced,advanced) %>%
+  #if player played for multiple teams in season, only take total row
+  mutate(tm=ifelse(tm=="TOT","1TOT",tm)) %>% 
+  group_by(player_id,season) %>% arrange(tm) %>% slice(1) %>% 
+  mutate(tm=ifelse(tm=="1TOT","TOT",tm)) %>% 
+  arrange(season,player) %>%
+  mutate(g_percent=g/max_games_playable*100,gs_percent=gs/g*100,.before=g) %>% 
+  select(-c(gs,max_games_playable)) %>% 
+  #filter for only last ten years for faster pre-processing
+  filter(season > 2009) %>% ungroup()
+```
+
+A comment was raised last year regarding positional scarcity. Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that is deemed to be the last one in a talent tier above the  remaining free agents in the same position. 
+
+The play-by-play data (available since the 1997 season) keeps track of the percentage of minutes played a player has played in each traditional position (point guard, shooting guard, small forward, power forward & center). I converted the percentages to raw minutes played at each position, and summed across all teams a player played for in the same season. I felt this method was more accurate than using the "totals" row. Next, I took a three-year rolling sum of minutes played for a larger sample size, and finally converted the totals back to percents.
+```{r load_pbp}
+play_by_play<-read_csv("Data/Player Play By Play.csv") %>% 
+  filter(tm!="TOT") %>%
+  select(seas_id:player,mp:c_percent)
+
+#replace NA's with zeroes
+play_by_play[is.na(play_by_play)] <- 0
+
+pbp_pos_mins=play_by_play %>% 
+  #convert percents to minutes played at position
+  mutate(across(pg_percent:c_percent,~./100*mp)) %>% 
+  rename_with(.fn=~gsub(x = ., pattern = "_percent", replacement = "_mp"),
+              .cols=pg_percent:c_percent) %>%
+  #sum season minutes across different teams
+  group_by(season,player_id) %>% 
+  mutate(across(mp:c_mp,sum,.names="{col}_summed")) %>% 
+  slice(1) %>% ungroup() %>% select(-c(mp:c_mp))
+
+pbp_last_three_years=pbp_pos_mins %>% group_by(player_id) %>%
+  #rolling 3 year sum of minutes played total & position
+  mutate(across(mp_summed:c_mp_summed,
+                list(three_yrs=~rollapplyr(.,3,sum,partial=TRUE)),
+                .names="{col}_last_3_yrs")) %>% ungroup() %>% 
+  select(-c(mp_summed:c_mp_summed)) %>%
+  #convert totals back to percents
+  mutate(across(pg_mp_summed_last_3_yrs:c_mp_summed_last_3_yrs,~./mp_summed_last_3_yrs)) %>%
+  rename_with(.fn=~gsub(x = ., pattern = "_mp", replacement = "_percent"),
+              .cols=pg_mp_summed_last_3_yrs:c_mp_summed_last_3_yrs) %>% 
+  select(-mp_summed_last_3_yrs)
+
+```
+With 3-year positional percentages in hand, it was time to assign the actual positions. Some players play one position almost exclusively, while other players are more flexible and alternate between positions. I set the baseline for a player to be considered at a "pure position" at 75%: if the player played at any position more than 75% of the time, they were deemed to be that position.
+
+All other players were bucketed into combo positions based on the maximum of the following sums of two traditional positions:
+
+* combo guard (point guard/shooting guard)
+* small wing (shooting guard/small forward)
+* big wing (small forward/power forward)
+* big man (power forward/center)
+
+Some players had multiple combo positions listed due to a small amount of minutes played and two players had no positions listed due to playing less than a full minute, so those players were added manually.
+
+```{r actual_positions}
+#assign pure positions to players with 75% of time at one position
+pure_position=pbp_last_three_years %>% 
+  pivot_longer(.,cols=c(pg_percent_summed_last_3_yrs:c_percent_summed_last_3_yrs),
+               names_to = "pos",values_to = "percent_at_pos") %>% group_by(seas_id) %>% 
+  slice_max(percent_at_pos) %>% ungroup() %>%
+  filter(percent_at_pos>0.75) %>% mutate(pos=word(pos,1,sep="_"))
+
+combo_position=
+  #remove players with pure positions
+  anti_join(pbp_last_three_years,pure_position %>% select(1:4)) %>% 
+  #create buckets of in-between positions
+  mutate(combo_guard=pg_percent_summed_last_3_yrs+sg_percent_summed_last_3_yrs,
+         small_wing=sg_percent_summed_last_3_yrs+sf_percent_summed_last_3_yrs,
+         big_wing=sf_percent_summed_last_3_yrs+pf_percent_summed_last_3_yrs,
+         big_man=pf_percent_summed_last_3_yrs+c_percent_summed_last_3_yrs) %>%
+  select(-c(pg_percent_summed_last_3_yrs:c_percent_summed_last_3_yrs)) %>% 
+  pivot_longer(.,cols=c(combo_guard:big_man),
+               names_to = "pos",values_to = "percent_at_pos") %>% 
+  group_by(seas_id) %>% slice_max(percent_at_pos) %>% ungroup() %>%
+  #4 players had 2 separate combo positions listed
+  filter(!(player=="Terrance Roberson" & pos=="big_wing") &
+           !(player=="Vince Hunter" & pos=="small_wing") &
+           !(player=="Ty Jerome" & pos=="small_wing") &
+           !(player=="Anthony Gill" & pos=="big_man"))
+
+all_player_pos=bind_rows(pure_position,combo_position) %>% 
+  #2 players had 0 MP, so they were lost in both combo & pure
+  add_row(seas_id=19914,season=2006,player_id=3589,
+          player="Alex Scales",pos="sg",percent_at_pos=1) %>%
+  add_row(seas_id=22403,season=2010,player_id=3882,
+          player="JamesOn Curry",pos="pg",percent_at_pos=1) %>% 
+  filter(season>2009) %>% select(-c(seas_id,percent_at_pos))
+```
+
+```{r clean_environ,include=FALSE}
+rm(cols_for_stats,advanced,totals,max_games_tots,max_games,totals_enhanced,
+   play_by_play,pbp_pos_mins,pbp_last_three_years,pure_position,
+   combo_position)
+```
+
+I've updated the free agents training set from last year to include the 2021 free agents. As a quick refresh:
+
+* scrape the Basketball-Reference [free agents tracker](https://www.basketball-reference.com/friv/free_agents.fcgi)
+* removed retired players and players who signed from overseas (wouldn't have any contract year data) from the dataset
+* set contract years to zero and salary to zero for players who:
+    + went overseas (not many, considering the pandemic)
+    + had explicitly non guaranteed first years in their contracts (training camp deals, two ways, ten days, exhibit 10s)
+    + had blanks in their contract terms cell
+* included option years and partially guaranteed years in my calculation of contract years
+    + looked at it as both sides (player and team) intending to see out the contract
+* gathered year 1 salary for remaining players using [Spotrac](https://www.spotrac.com/nba/contracts/)
+    + I'd previously used Capology, Basketball-Reference & Basketball-Insiders, but they were not needed since I got started with the data-gathering before/during the season rather than after the season
+* general housekeeping like adding suffixes (Jr., II, III) to certain players to match up with statistical data
+```{r load_train}
+past_free_agents<-read_csv("Data/2016-2021 Free Agents.csv")
+```
