@@ -34,6 +34,21 @@ free_agents<-anti_join(free_agents,no_contract)
 no_contract<-no_contract %>% mutate(contract_yrs=0,yr_1_salary=0)
 free_agents<-full_join(free_agents,no_contract)
 
-write_csv(prev_free_agents %>% bind_rows(free_agents),"Data/2016-2021 Free Agents.csv")
+write_csv(prev_free_agents %>% bind_rows(free_agents) %>% arrange(season,player),
+          "Data/2016-2021 Free Agents.csv")
 
 #include option years, partial guaranteed years in counting contract years
+
+salary_cap_hist_url<-"https://basketball.realgm.com/nba/info/salary_cap"
+salary_cap_hist<-salary_cap_hist_url %>% read_html() %>% 
+  html_nodes(xpath='//*[contains(concat( " ", @class, " " ), concat( " ", "compact", " " ))]') %>% 
+  .[[1]] %>% html_table(fill=TRUE)
+#add correct column names (ended up as first row)
+colnames(salary_cap_hist)<-salary_cap_hist[1,]
+salary_cap_hist<-salary_cap_hist[-1,]
+#only take year and cap number, parse cap into a number (has dollar sign and commas originally)
+salary_cap_hist<-salary_cap_hist %>% select(3:4) %>%
+  rename(season=`Luxury Tax`,cap=BAE) %>%
+  mutate(season=as.numeric(str_sub(season,end=-4))) %>%
+  mutate(cap=parse_number(cap))
+write_csv(salary_cap_hist,"Data/Salary Cap History.csv")
