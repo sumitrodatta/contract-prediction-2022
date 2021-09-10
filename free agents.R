@@ -49,6 +49,38 @@ salary_cap_hist<-salary_cap_hist[-1,]
 #only take year and cap number, parse cap into a number (has dollar sign and commas originally)
 salary_cap_hist<-salary_cap_hist %>% select(3:4) %>%
   rename(season=`Luxury Tax`,cap=BAE) %>%
-  mutate(season=as.numeric(str_sub(season,end=-4))) %>%
+  mutate(season=as.numeric(str_sub(season,start=-4))) %>%
   mutate(cap=parse_number(cap))
 write_csv(salary_cap_hist,"Data/Salary Cap History.csv")
+
+url="https://www.spotrac.com/nba/free-agents/2022"
+fa_current_yr<-url %>% read_html() %>% html_nodes("table") %>% .[[1]] %>% html_table() %>% 
+  #filter out coaches
+  filter(`Pos.` != "COA") %>% 
+  rename(Player=1,Experience=Exp,sal_2022=`2021-2022 AAV`) %>% 
+  select(Player,Type,Experience,sal_2022) %>% mutate(season=2022) %>% 
+  #remove repeat of player's last name
+  separate(Player,into=c('to_discard','player'),sep='\\s{2,100}') %>% select(-to_discard) %>%
+  arrange(player) %>% clean_names() %>% 
+  #add salary amounts for options
+  mutate(contract_yrs=NA,
+         first_year_percent_of_cap=ifelse(str_detect(type,"O"),parse_number(sal_2022),NA)) %>%
+  select(-sal_2022) %>%
+  #change names to match basketball-reference data
+  mutate(player=case_when(str_detect(player,'Brown Jr.')~'Bruce Brown',
+                          str_detect(player,'Goran')~'Goran Dragić',
+                          str_detect(player,'Jonas V')~'Jonas Valančiūnas',
+                          str_detect(player,"Jusuf")~'Jusuf Nurkić',
+                          str_detect(player,"Lonnie")~'Lonnie Walker',
+                          str_detect(player,'Louis Will')~'Lou Williams',
+                          str_detect(player,'Luka Sam')~'Luka Šamanić',
+                          str_detect(player,'Mohamed')~'Mo Bamba',
+                          str_detect(player,'Otto')~'Otto Porter',
+                          str_detect(player,'Patrick Mills')~'Patty Mills',
+                          str_detect(player,'PJ Wash')~'P.J. Washington',
+                          str_detect(player,'R.J. Barr')~'RJ Barrett',
+                          str_detect(player,'Tomas Sato')~'Tomáš Satoranský',
+                          str_detect(player,'Vlatko')~'Vlatko Čančar',
+                          TRUE~player))
+
+write_csv(fa_current_yr,"Data/Free Agents 2022.csv")
