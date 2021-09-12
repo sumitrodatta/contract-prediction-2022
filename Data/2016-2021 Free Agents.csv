@@ -987,15 +987,15 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Alen Smailagić,UFA,0,*signed w/partizan belgrade*,0,0,NA
 2021,Alex Caruso,UFA,2.4,Signed 4-yr/$37M contract,4,8600000,spotrac
 2021,Alex Len,UFA,2.7,Signed 2-yr/$7.7M contract,2,3732000,spotrac
-2021,Alize Johnson,UFA,0.9,*1-yr deal w/Bulls*,1,1729217,spotrac
+2021,Alize Johnson,UFA,0.9,*2-yr deal w/Bulls*,2,1729217,spotrac
 2021,Alfonzo McKinnie,UFA,0.8,,NA,NA,NA
-2021,Amida Brimah,UFA,0,,NA,NA,NA
+2021,Amida Brimah,UFA,0,*signed w/mets de guaynabo*,0,0,NA
 2021,Amir Coffey,RFA,0.7,,NA,NA,NA
 2021,Andre Drummond,UFA,2,Signed 1-yr/$2.4M minimum contract with Philadelphia,1,2401537,spotrac
 2021,Andre Iguodala,UFA,1.7,Signed 1-yr/$2.6M contract,1,2641691,spotrac
 2021,Anthony Lamb,RFA,0.2,*two-way*,0,0,NA
 2021,Anthony Tolliver,UFA,0.1,,NA,NA,NA
-2021,Armoni Brooks,RFA,0.3,,NA,NA,NA
+2021,Armoni Brooks,RFA,0.3,*exhibit 10*,0,0,NA
 2021,Aron Baynes,UFA,1,,NA,NA,NA
 2021,Austin Rivers,UFA,1.3,*1-yr deal w/Nugs*,1,2401537,spotrac
 2021,Avery Bradley,UFA,-0.1,,NA,NA,NA
@@ -1028,13 +1028,13 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Dante Exum,UFA,-0.1,,NA,NA,NA
 2021,DaQuan Jeffries,UFA,0.3,,NA,NA,NA
 2021,David Nwaba,UFA,1.3,Signed 3-yr/$15M contract,3,4650000,spotrac
-2021,DeAndre Jordan,UFA,3.9,,NA,NA,NA
+2021,DeAndre Jordan,UFA,3.9,*1-yr deal w/Lakers*,1,2641691,spotrac
 2021,DeAndre' Bembry,UFA,1.2,Signed 1-yr/$1.9M minimum contract,1,1939350,spotrac
 2021,Deividas Sirvydis,RFA,0,*waived 2 days before free agency*,NA,NA,NA
 2021,DeMar DeRozan,UFA,7.4,Signed 3-yr/$85M contract as part of a sign and trade from San Antonio to Chicago,3,26000000,spotrac
 2021,DeMarcus Cousins,UFA,1.2,,NA,NA,NA
 2021,Dennis Schröder,UFA,3.8,Signed 1-yr/$5.9M contract,1,5890000,spotrac
-2021,Dennis Smith,UFA,0.6,,NA,NA,NA
+2021,Dennis Smith Jr.,UFA,0.6,,NA,NA,NA
 2021,Denzel Valentine,UFA,0.7,,NA,NA,NA
 2021,Derrick Rose,UFA,3.1,Signed 3-yr/$43.6M contract,3,13445120,spotrac
 2021,Devon Dotson,RFA,0.2,Signed two-way contract,0,0,NA
@@ -1045,7 +1045,7 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Duncan Robinson,RFA,3.7,Signed 5-yr/$90M contract,5,15560000,spotrac
 2021,Dwayne Bacon,UFA,0.5,Signed 1-yr/$1.8M minimum contract,1,1789256,spotrac
 2021,Dwight Howard,UFA,4,Signed 1-yr/$2.6M minimum contract,1,2641491,spotrac
-2021,E'Twaun Moore,UFA,0.4,,NA,NA,NA
+2021,E'Twaun Moore,UFA,0.4,*1-yr deal w/Magic*,1,2641691,spotrac
 2021,Ed Davis,UFA,0.8,,NA,NA,NA
 2021,Elfrid Payton,UFA,1,Signed 1-yr/$2.4M minimum contract,1,2239544,spotrac
 2021,Enes Kanter,UFA,7.5,Signed 1-yr/$2.6M minimum contract,1,2641691,spotrac
@@ -1065,22 +1065,23 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Gorgui Dieng,UFA,2.1,Signed 1-yr/$4M contract,1,4000000,spotrac
 2021,Grant Riller,UFA,0.1,Signed two-way contract,0,0,NA
 2021,Hamidou Diallo,RFA,1.6,,2,5200000,spotrac
-2021,Harry Giles,UFA,0.5,,NA,NA,NA
+2021,Harry Giles,UFA,0.5,*exhibit 9*,0,0,NA
 2021,Hassan Whiteside,UFA,0.9,Signed 1-yr/$2.4M minimum contract,1,2401537,spotrac
 2021,Ignas Brazdeikis,RFA,0.1,Signed two-way contract,0,0,NA
-2021,Isaac Bonga,RFA,0,,NA,NA,NA
+2021,Isaac Bonga,RFA,0,*1-yr nonguaranteed*,0,0,NA
 2021,Isaiah Hartenstein,RFA,1.6,,NA,NA,NA
 2021,Ish Smith,UFA,1.1,Signed 2-yr/$9M contract,2,4500000,spotrac
 2021,J.J. Redick,UFA,0.7,,NA,NA,NA
+2021,Jahlil Okafor,UFA,0.6,,NA,NA,NA
 2021,JaKarr Sampson,UFA,0.3,,NA,NA,NA
 2021,Jalen Harris,RFA,0.3,*suspended for 2022 for drug violation*,0,0,NA
 2021,James Ennis,UFA,2,,NA,NA,NA
 2021,James Johnson,UFA,1.2,Signed 1-yr/$2.6M contract,1,2641691,spotrac
 2021,James Nunnally,RFA,0,,NA,NA,NA
 2021,JaMychal Green,UFA,2.6,Signed 2-yr/$17M contract,2,8200000,spotrac
-2021,Jared Dudley,UFA,0.1,,NA,NA,NA
+2021,Jared Dudley,UFA,0.1,"*retire, join Mavs coaching*",0,0,NA
 2021,Jared Harper,RFA,-0.1,,NA,NA,NA
-2021,Jarred Vanderbilt,RFA,3.1,,NA,NA,NA
+2021,Jarred Vanderbilt,RFA,3.1,*3-yr deal w/Wolves*,3,4259259,spotrac
 2021,Jarrell Brantley,RFA,0.5,Signed 1-yr/$1.7M contract,1,1669178,spotrac
 2021,Jarrett Allen,RFA,6.4,Signed 5-yr/$100M contract,5,20000000,spotrac
 2021,JaVale McGee,UFA,1,Signed 1-yr/$5M contract,1,5000000,spotrac
@@ -1092,7 +1093,7 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,John Collins,RFA,6.7,Signed 5-yr/$125M contract,5,23000000,spotrac
 2021,Jontay Porter,UFA,0,,NA,NA,NA
 2021,Jordan Bell,UFA,0,,NA,NA,NA
-2021,Jordan McLaughlin,RFA,1.2,,NA,NA,NA
+2021,Jordan McLaughlin,RFA,1.2,*3-yr deal w/Wolves*,3,1669178,spotrac
 2021,Josh Hall,RFA,-0.9,Signed two-way contract,0,0,NA
 2021,Josh Hart,RFA,2.7,Signed 3-yr/$38M contract,3,12000000,spotrac
 2021,Justin Jackson,RFA,0.2,,NA,NA,NA
@@ -1100,10 +1101,10 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Justise Winslow,UFA,-0.7,Signed 2-yr/$8M contract,2,3902439,spotrac
 2021,Juwan Morgan,RFA,0.3,,NA,NA,NA
 2021,Kawhi Leonard,UFA,8.8,Signed 4-yr/$176M contract,4,39344900,spotrac
-2021,Keita Bates-Diop,RFA,0.3,*1-yr deal w/Spurs*,1,1729217,spotrac
+2021,Keita Bates-Diop,RFA,0.3,*2-yr deal w/Spurs*,2,1729217,spotrac
 2021,Keljin Blevins,RFA,-0.2,,NA,NA,NA
 2021,Kelly Olynyk,UFA,5.1,Signed 3-yr/$37M contract,3,12195122,spotrac
-2021,Kelly Oubre,UFA,2.2,Signed 2-yr/$24.6M contract,2,12000000,spotrac
+2021,Kelly Oubre Jr.,UFA,2.2,Signed 2-yr/$24.6M contract,2,12000000,spotrac
 2021,Kemba Walker,UFA,3.3,Signed 2-yr/$17.9M contract,2,8729020,spotrac
 2021,Kendrick Nunn,UFA,2.9,Signed 2-yr/$10.3M contract,2,5000000,spotrac
 2021,Kent Bazemore,UFA,1.8,Signed 1-yr/$2.4M contract,1,2401537,spotrac
@@ -1119,10 +1120,10 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Lou Williams,UFA,1.7,,1,5000000,spotrac
 2021,Luke Kornet,UFA,0.7,,NA,NA,NA
 2021,Malik Monk,UFA,1,Signed 1-yr/$1.8M minimum contract,1,1789256,spotrac
-2021,Marcos Louzada Silva,RFA,-0.1,Signed 4-yr/$7.7M contract,4,1786878,spotrac
+2021,Didi Louzada,RFA,-0.1,Signed 4-yr/$7.7M contract,4,1786878,spotrac
 2021,Markieff Morris,UFA,1.6,Signed 1-yr/$2.6M minimum deal with MIA,1,2641691,spotrac
 2021,Markus Howard,RFA,-0.3,,NA,NA,NA
-2021,Matt Thomas,UFA,0.2,*1-yr deal w/Bulls*,1,1669178,spotrac
+2021,Matt Thomas,UFA,0.2,*exhibit 9*,0,0,NA
 2021,Matthew Dellavedova,UFA,0,*signed w/melbourne united*,0,0,NA
 2021,Maurice Harkless,UFA,0.6,Signed 2-yr/$9M contract,2,4347600,spotrac
 2021,Max Strus,RFA,0.9,Signed 2-yr/$3.4M contract,2,1669178,spotrac
@@ -1132,7 +1133,7 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Mike Scott,UFA,1,,NA,NA,NA
 2021,Moritz Wagner,UFA,1.2,Signed 2-yr/$3.6M contract,2,1729217,spotrac
 2021,Nate Darling,UFA,0,,NA,NA,NA
-2021,Nate Hinton,RFA,0,"Signed a two-way contract with Dallas 08/03/21, waived before season",0,0,NA
+2021,Nate Hinton,RFA,0,"Signed a two-way contract with Dallas 08/03/21, waived before season *exhibit 9 w/indiana*",0,0,NA
 2021,Nathan Knight,RFA,0.4,Signed two-way contract,0,0,NA
 2021,Nemanja Bjelica,UFA,0.9,Signed 1-yr/$2M minimum contract,1,2089448,spotrac
 2021,Nerlens Noel,UFA,5.2,Signed 3-yr/$27.7M contract,3,8800000,spotrac
@@ -1143,9 +1144,9 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Norvel Pelle,RFA,0.2,*waived 2 days before free agency*,NA,NA,NA
 2021,Otto Porter,UFA,1.3,Signed 1-yr/$2.4M minimum contract,1,2389641,spotrac
 2021,P.J. Tucker,UFA,1,Signed 2-yr/$14M contract,2,7000000,spotrac
-2021,Patrick Patterson,UFA,1.2,,NA,NA,NA
+2021,Patrick Patterson,UFA,1.2,*exhibit 9*,0,0,NA
 2021,Patty Mills,UFA,2.2,Signed 2-yr/$12M contract,2,5890000,spotrac
-2021,Paul Millsap,UFA,3.2,,NA,NA,NA
+2021,Paul Millsap,UFA,3.2,*1-yr deal w/Nets*,1,2641691,spotrac
 2021,Paul Watson,UFA,0.6,,NA,NA,NA
 2021,Quinndary Weatherspoon,UFA,0.1,,NA,NA,NA
 2021,Rajon Rondo,UFA,1.3,Signed 1-yr/$2.6M minimum contract,1,2641691,spotrac
@@ -1169,24 +1170,24 @@ season,player,type,ws,terms,contract_yrs,yr_1_salary,Source
 2021,Skylar Mays,RFA,0.8,Signed two-way contract,0,0,NA
 2021,Solomon Hill,UFA,1.3,Signed 1-yr/$2.2M minimum contract,1,2389641,spotrac
 2021,Spencer Dinwiddie,UFA,0.1,Signed 3-yr/$54M contract as part of a sign and trade,3,17142857,spotrac
-2021,Stanley Johnson,UFA,1,,NA,NA,NA
+2021,Stanley Johnson,UFA,1,*exhibit 9*,0,0,NA
 2021,Sterling Brown,UFA,1.8,Signed 2-yr/$6M contract,2,3000000,spotrac
 2021,Sviatoslav Mykhailiuk,UFA,0.3,,2,1729217,spotrac
 2021,T.J. Leaf,RFA,0,,NA,NA,NA
 2021,T.J. McConnell,UFA,4.8,Signed 4-yr/$33.6M contract,4,7500000,spotrac
-2021,Tacko Fall,RFA,0.5,*1-yr deal w/Cavs*,1,1669178,spotrac
+2021,Tacko Fall,RFA,0.5,*exhibit 10*,0,0,spotrac
 2021,Taj Gibson,UFA,3.8,Signed 2-yr/$10M contract,2,4910000,spotrac
 2021,Talen Horton-Tucker,RFA,2.1,Signed 3-yr/$30.8M contract,3,9500000,spotrac
 2021,Terence Davis,RFA,0.8,Signed 2-yr/$8M contract,2,4000000,spotrac
 2021,Thanasis Antetokounmpo,RFA,0.7,Signed 2-yr/$3.6M contract,2,1729217,spotrac
 2021,Theo Pinson,RFA,-0.1,,NA,NA,NA
 2021,Tim Frazier,UFA,-0.2,,NA,NA,NA
-2021,Tim Hardaway,UFA,4.3,Signed 4-yr/$75M contract,4,21306816,spotrac
+2021,Tim Hardaway Jr.,UFA,4.3,Signed 4-yr/$75M contract,4,21306816,spotrac
 2021,Timothé Luwawu-Cabarrot,UFA,0.3,*1-yr nonguaranteed*,0,0,NA
 2021,Tony Bradley,RFA,2.7,Signed 2-yr/$3.8M contract,2,1789256,spotrac
 2021,Tony Snell,UFA,2,Signed 1-yr/$2.4M minimum contract,1,2389641,spotrac
 2021,Torrey Craig,UFA,2.2,Signed 2-yr/$10M contract,2,4878049,spotrac
-2021,Tremont Waters,RFA,0.4,*two-way*,0,0,NA
+2021,Tremont Waters,RFA,0.4,*exhibit 10*,0,0,NA
 2021,Trent Forrest,RFA,0.7,Signed two-way contract,0,0,NA
 2021,Trevor Ariza,UFA,1.6,Signed 1-yr/$2.6M minimum contract,1,2641691,spotrac
 2021,Trey Lyles,UFA,0.6,Signed 2-yr/$5M contract,2,2500000,spotrac
