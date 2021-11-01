@@ -1,10 +1,8 @@
 player,type,experience,season,contract_yrs,first_year_percent_of_cap
 Aaron Henry,RFA,1,2022,NA,NA
 Aaron Holiday,RFA,4,2022,NA,NA
-Aaron Nesmith,CO,1,2022,NA,4132054
 Aaron Wiggins,RFA,1,2022,NA,NA
 Abdel Nader,CO,4,2022,NA,2080000
-Aleksej Pokusevski,CO,1,2022,NA,3587278
 Amir Coffey,RFA,3,2022,NA,NA
 Andre Drummond,UFA,10,2022,NA,NA
 Andre Iguodala,UFA,18,2022,NA,NA
@@ -25,7 +23,6 @@ Bruce Brown,UFA,4,2022,NA,NA
 Bruno Fernando,RFA,3,2022,NA,NA
 Bryn Forbes,UFA,6,2022,NA,NA
 Caleb Martin,RFA,3,2022,NA,NA
-Cameron Johnson,CO,2,2022,NA,4648375
 Carmelo Anthony,UFA,18,2022,NA,NA
 Cassius Winston,RFA,2,2022,NA,NA
 Chandler Hutchison,RFA,4,2022,NA,NA
@@ -40,8 +37,6 @@ Daishen Nix,RFA,1,2022,NA,NA
 Damian Jones,UFA,6,2022,NA,NA
 Damion Lee,UFA,5,2022,NA,NA
 Danuel House,UFA,6,2022,NA,NA
-Darius Bazley,CO,2,2022,NA,2865407
-Darius Garland,CO,2,2022,NA,7270829
 Daulton Hommes,RFA,1,2022,NA,NA
 David Duke Jr.,RFA,1,2022,NA,NA
 David Johnson,RFA,1,2022,NA,NA
@@ -63,7 +58,6 @@ Dorian Finney-Smith,UFA,6,2022,NA,NA
 Dru Smith,RFA,1,2022,NA,NA
 Duane Washington Jr.,RFA,1,2022,NA,NA
 Dwight Howard,UFA,18,2022,NA,NA
-Dylan Windler,CO,2,2022,NA,2612430
 E'Twaun Moore,UFA,11,2022,NA,NA
 Ed Davis,UFA,12,2022,NA,NA
 Elfrid Payton,UFA,8,2022,NA,NA
@@ -78,16 +72,13 @@ Frank Ntilikina,UFA,5,2022,NA,NA
 Garrison Mathews,RFA,3,2022,NA,NA
 Gary Harris,UFA,8,2022,NA,NA
 Gary Payton II,UFA,6,2022,NA,NA
-Goga Bitadze,CO,2,2022,NA,3409505
 Goran Dragić,UFA,14,2022,NA,NA
 Gorgui Dieng,UFA,9,2022,NA,NA
 Grant Riller,RFA,2,2022,NA,NA
-Grant Williams,CO,2,2022,NA,2950670
 Hamidou Diallo,CO,3,2022,NA,5200000
 Hassan Whiteside,UFA,10,2022,NA,NA
 Ignas Brazdeikis,RFA,3,2022,NA,NA
 Isaac Bonga,UFA,4,2022,NA,NA
-Isaac Okoro,CO,1,2022,NA,7270829
 Isaiah Hartenstein,UFA,4,2022,NA,NA
 Isaiah Roby,CO,2,2022,NA,1600201
 Ishmail Wainright,RFA,1,2022,NA,NA
@@ -97,7 +88,6 @@ Jae’Sean Tate,CO,1,2022,NA,1481839
 Jake Layman,UFA,6,2022,NA,NA
 Jalen Brunson,UFA,4,2022,NA,NA
 Jalen McDaniels,CO,2,2022,NA,1532398
-Jalen Smith,CO,1,2022,NA,4832084
 James Harden,PO,11,2022,NA,42782880
 James Johnson,UFA,13,2022,NA,NA
 James Wiseman,CO,1,2022,NA,9904960
@@ -137,7 +127,6 @@ Kyle Anderson,UFA,8,2022,NA,NA
 Kyrie Irving,PO,10,2022,NA,34122650
 KZ Okpala,RFA,3,2022,NA,NA
 LaMarcus Aldridge,UFA,16,2022,NA,NA
-LaMelo Ball,CO,1,2022,NA,8899069
 Lonnie Walker,RFA,4,2022,NA,NA
 Louis King,RFA,3,2022,NA,NA
 Lou Williams,UFA,17,2022,NA,NA
@@ -149,7 +138,6 @@ Marcus Garrett,RFA,1,2022,NA,NA
 Markieff Morris,UFA,11,2022,NA,NA
 Markus Howard,RFA,2,2022,NA,NA
 Marvin Bagley III,RFA,4,2022,NA,NA
-Matisse Thybulle,CO,2,2022,NA,3128282
 Matt Thomas,RFA,3,2022,NA,NA
 McKinley Wright IV,RFA,1,2022,NA,NA
 Michael Carter-Williams,UFA,9,2022,NA,NA
@@ -158,6 +146,7 @@ Miles Bridges,RFA,4,2022,NA,NA
 Mitchell Robinson,UFA,4,2022,NA,NA
 Mo Bamba,RFA,4,2022,NA,NA
 Montrezl Harrell,UFA,7,2022,NA,NA
+Mychal Mulder,RFA,3,2022,NA,NA
 Nathan Knight,RFA,2,2022,NA,NA
 Naz Reid,CO,2,2022,NA,1399637
 Neemias Queta,RFA,1,2022,NA,NA
@@ -172,9 +161,7 @@ Patrick Beverley,UFA,10,2022,NA,NA
 Patty Mills,PO,12,2022,NA,6037250
 Paul Millsap,UFA,16,2022,NA,NA
 Paul Watson,RFA,3,2022,NA,NA
-Payton Pritchard,CO,1,2022,NA,2612430
 Petr Cornelie,RFA,1,2022,NA,NA
-P.J. Washington,CO,2,2022,NA,3017640
 R.J. Nembhard,RFA,1,2022,NA,NA
 Raul Neto,UFA,7,2022,NA,NA
 Ricky Rubio,UFA,11,2022,NA,NA
@@ -182,7 +169,6 @@ Robert Covington,UFA,9,2022,NA,NA
 Robin Lopez,UFA,14,2022,NA,NA
 Rodney Hood,UFA,8,2022,NA,NA
 Rodney McGruder,UFA,6,2022,NA,NA
-Romeo Langford,CO,2,2022,NA,4132054
 Russell Westbrook,PO,13,2022,NA,41358814
 Sam Dekker,UFA,5,2022,NA,NA
 Sam Hauser,RFA,1,2022,NA,NA
@@ -212,11 +198,8 @@ Trey Burke,PO,8,2022,NA,3150000
 Trey Lyles,CO,6,2022,NA,2562500
 Tristan Thompson,UFA,11,2022,NA,NA
 Bruce Brown,RFA,4,2022,NA,NA
-Ty Jerome,CO,2,2022,NA,2782354
 Tyler Cook,RFA,3,2022,NA,NA
-Tyrese Maxey,CO,1,2022,NA,3038140
 Tyus Jones,UFA,7,2022,NA,NA
-Udoka Azubuike,CO,1,2022,NA,2537811
 Udonis Haslem,UFA,19,2022,NA,NA
 Victor Oladipo,UFA,9,2022,NA,NA
 Vlatko Čančar,RFA,3,2022,NA,NA
