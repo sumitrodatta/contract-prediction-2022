@@ -111,7 +111,7 @@ advanced_and_totals<-left_join(totals_enhanced,advanced) %>%
 
 A comment was raised last year regarding positional scarcity. Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that is deemed to be the last one in a talent tier above the  remaining free agents in the same position. 
 
-The play-by-play data (available since the 1997 season) keeps track of the percentage of minutes played a player has played in each traditional position (point guard, shooting guard, small forward, power forward & center). I converted the percentages to raw minutes played at each position, and summed across all teams a player played for in the same season. I felt this method was more accurate than using the "totals" row. Next, I took a three-year rolling sum of minutes played for a larger sample size, and finally converted the totals back to percents.
+The play-by-play data (available since the 1997 season) keeps track of the percentage of minutes played a player has played in each traditional position (point guard, shooting guard, small forward, power forward & center). I converted the percentages to raw minutes played at each position, and summed across all teams a player played for in the same season. I felt this method was more accurate than using the "totals" row.
 ```{r load_pbp}
 play_by_play<-read_csv("Data/Player Play By Play.csv") %>% 
   filter(tm!="TOT") %>%
@@ -130,69 +130,11 @@ pbp_pos_mins=play_by_play %>%
   mutate(across(mp:c_mp,sum,.names="{col}_summed")) %>% 
   slice(1) %>% ungroup() %>% select(-c(mp:c_mp))
 
-pbp_last_three_years=pbp_pos_mins %>% group_by(player_id) %>%
-  #rolling 3 year sum of minutes played total & position
-  mutate(across(mp_summed:c_mp_summed,
-                list(three_yrs=~rollapplyr(.,3,sum,partial=TRUE)),
-                .names="{col}_last_3_yrs")) %>% ungroup() %>% 
-  select(-c(mp_summed:c_mp_summed)) %>%
-  #convert totals back to percents
-  mutate(across(pg_mp_summed_last_3_yrs:c_mp_summed_last_3_yrs,~./mp_summed_last_3_yrs)) %>%
-  rename_with(.fn=~gsub(x = ., pattern = "_mp", replacement = "_percent"),
-              .cols=pg_mp_summed_last_3_yrs:c_mp_summed_last_3_yrs) %>% 
-  select(-mp_summed_last_3_yrs)
-
-```
-With 3-year positional percentages in hand, it was time to assign the actual positions. Some players play one position almost exclusively, while other players are more flexible and alternate between positions. I set the baseline for a player to be considered at a "pure position" at 75%: if the player played at any position more than 75% of the time, they were deemed to be that position.
-
-All other players were bucketed into combo positions based on the maximum of the following sums of two traditional positions:
-
-* combo guard (point guard/shooting guard)
-* small wing (shooting guard/small forward)
-* big wing (small forward/power forward)
-* big man (power forward/center)
-
-Some players had multiple combo positions listed due to a small amount of minutes played and two players had no positions listed due to playing less than a full minute, so those players were added manually.
-
-```{r actual_positions}
-#assign pure positions to players with 75% of time at one position
-pure_position=pbp_last_three_years %>% 
-  pivot_longer(.,cols=c(pg_percent_summed_last_3_yrs:c_percent_summed_last_3_yrs),
-               names_to = "pos",values_to = "percent_at_pos") %>% group_by(seas_id) %>% 
-  slice_max(percent_at_pos) %>% ungroup() %>%
-  filter(percent_at_pos>0.75) %>% mutate(pos=word(pos,1,sep="_"))
-
-combo_position=
-  #remove players with pure positions
-  anti_join(pbp_last_three_years,pure_position %>% select(1:4)) %>% 
-  #create buckets of in-between positions
-  mutate(combo_guard=pg_percent_summed_last_3_yrs+sg_percent_summed_last_3_yrs,
-         small_wing=sg_percent_summed_last_3_yrs+sf_percent_summed_last_3_yrs,
-         big_wing=sf_percent_summed_last_3_yrs+pf_percent_summed_last_3_yrs,
-         big_man=pf_percent_summed_last_3_yrs+c_percent_summed_last_3_yrs) %>%
-  select(-c(pg_percent_summed_last_3_yrs:c_percent_summed_last_3_yrs)) %>% 
-  pivot_longer(.,cols=c(combo_guard:big_man),
-               names_to = "pos",values_to = "percent_at_pos") %>% 
-  group_by(seas_id) %>% slice_max(percent_at_pos) %>% ungroup() %>%
-  #4 players had 2 separate combo positions listed
-  filter(!(player=="Terrance Roberson" & pos=="big_wing") &
-           !(player=="Vince Hunter" & pos=="small_wing") &
-           !(player=="Ty Jerome" & pos=="small_wing") &
-           !(player=="Anthony Gill" & pos=="big_man"))
-
-all_player_pos=bind_rows(pure_position,combo_position) %>% 
-  #2 players had 0 MP, so they were lost in both combo & pure
-  add_row(seas_id=19914,season=2006,player_id=3589,
-          player="Alex Scales",pos="sg",percent_at_pos=1) %>%
-  add_row(seas_id=22403,season=2010,player_id=3882,
-          player="JamesOn Curry",pos="pg",percent_at_pos=1) %>% 
-  filter(season>2009) %>% select(-c(seas_id,percent_at_pos))
 ```
 
 ```{r clean_environ,include=FALSE}
 rm(cols_for_stats,advanced,totals,max_games_tots,max_games,totals_enhanced,
-   play_by_play,pbp_pos_mins,pbp_last_three_years,pure_position,
-   combo_position)
+   play_by_play)
 ```
 
 I've updated the free agents training set from last year to include the 2021 free agents. As a quick refresh:
@@ -211,3 +153,36 @@ I've updated the free agents training set from last year to include the 2021 fre
 ```{r load_train}
 past_free_agents<-read_csv("Data/2016-2021 Free Agents.csv")
 ```
+The next file I used was salary cap history, scraped from RealGM. To somewhat normalize comparisons across years, I converted the first year salary to a percentage of the salary cap.
+
+```{r load_cap_hist}
+#subtract one from year to match up with offseason in which contract was signed
+salary_cap_hist<-read_csv("Data/Salary Cap History.csv") %>% mutate(season=season-1)
+#create variable of first year salary as percentage of cap
+#easier to compare across years
+past_free_agents<-past_free_agents %>% select(-c(terms,Source)) %>% 
+  left_join(.,salary_cap_hist) %>% 
+  mutate(first_year_percent_of_cap=yr_1_salary/cap) %>% 
+  select(-c(yr_1_salary,cap))
+```
+
+The last file loaded is our evaluation set: the 2022 free agent class, retrieved from Spotrac.I had to edit this dataset to match the Basketball-Reference names (mainly adding diacritics to European names). In addition, I filtered out players with options. Players who decline player options and players who have their team options declined with more than 3 years of experience become unrestricted free agents. Players with less than or equal to 3 years of experience and a declined team option become restricted free agents. I'll use this fact to see which players & teams might decline their option.
+
+```{r load_eval}
+current_fa<-read_csv("Data/Free Agents 2022.csv")
+#separate out options to compare what players options get if declined
+current_fa_options<-current_fa %>% filter(str_detect(type,"PO|CO")) %>% 
+  select(-c(experience,contract_yrs)) %>% 
+  rename(option_type=type,option_amt=first_year_percent_of_cap) %>%
+  mutate(option_amt=currency(option_amt,digits=0))
+#make player options all declined (UFA's)
+#make club options ufa or rfa depending on exp
+current_fa<-current_fa %>%
+  mutate(type=case_when((type=="PO"|(type=="CO" & experience >= 4))~"UFA",
+                        (type=="CO" & experience < 4)~"RFA",
+                        TRUE~type)) %>% 
+  group_by(player) %>% select(-experience) %>% slice(1) %>% ungroup() %>% 
+  mutate(first_year_percent_of_cap=NA)
+```
+
+In the GitHub repository where this project is located, a file called `free agents.r` has more details on exactly how I scraped the train set, evaluation set and the salary cap history.
