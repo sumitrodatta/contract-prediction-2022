@@ -109,7 +109,7 @@ advanced_and_totals<-left_join(totals_enhanced,advanced) %>%
   filter(season > 2009) %>% ungroup()
 ```
 
-A comment was raised last year regarding positional scarcity. Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that is deemed to be the last one in a talent tier above the  remaining free agents in the same position. 
+A comment was raised last year regarding positional scarcity. Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that is deemed to be the last one in a talent tier above the remaining free agents in the same position. 
 
 The play-by-play data (available since the 1997 season) keeps track of the percentage of minutes played a player has played in each traditional position (point guard, shooting guard, small forward, power forward & center). I converted the percentages to raw minutes played at each position, and summed across all teams a player played for in the same season. I felt this method was more accurate than using the "totals" row.
 ```{r load_pbp}
@@ -186,3 +186,143 @@ current_fa<-current_fa %>%
 ```
 
 In the GitHub repository where this project is located, a file called `free agents.r` has more details on exactly how I scraped the train set, evaluation set and the salary cap history.
+
+## Retrospective on Last Year's Results
+
+Before getting into pre-processing, we'll take a look at last year's results and see how the models performed. We remove players who ended up not hitting the market due to their option being picked up. Any player who was predicted but didn't end up in the free agent history must not have received a contract, so their NA's were replaced with zeroes.
+
+```{r last_years_results_load, echo=FALSE}
+non_options=read_csv("https://raw.githubusercontent.com/sumitrodatta/contract-prediction-2021/master/Non-Option%20Contracts.csv")
+options=read_csv("https://raw.githubusercontent.com/sumitrodatta/contract-prediction-2021/master/Options.csv")
+combined_predictions=bind_rows(non_options,options) %>% 
+  clean_names() %>% 
+  #take out totals
+  select(-starts_with("total")) %>%
+  select(-c(age,type)) %>% 
+  mutate(across(ends_with("cap_percent"),~parse_number(.)/100)) %>%
+  mutate(x2021_option=parse_number(x2021_option)) %>%
+  #join predictions with actual
+  left_join(.,past_free_agents %>% filter(season==2021)) %>%
+  select(-c(season,ws,option_type,type)) %>% 
+  #filter out players who either picked up player option or had team option picked up
+  filter(is.na(x2021_option)|!is.na(contract_yrs)) %>%
+  select(-x2021_option) %>%
+  replace_na(list(contract_yrs=0,first_year_percent_of_cap=0)) %>%
+  mutate(contract_yrs=factor(contract_yrs,levels=0:5),
+         yrs_y1s2=factor(yrs_y1s2,levels=0:5),
+         yrs_s1y2=factor(yrs_s1y2,levels=0:5)) %>%
+  mutate(across(contains("cap"),~round(.,digits=4)))
+rm(non_options,options)
+```
+
+```{r accuracy,echo=FALSE}
+y1s2_yr_acc=round(accuracy(combined_predictions,truth=contract_yrs,estimate=yrs_y1s2) %>% pull(.estimate)*100,2)
+s1y2_yr_acc=round(accuracy(combined_predictions,truth=contract_yrs,estimate=yrs_s1y2) %>% pull(.estimate)*100,2)
+```
+
+The years accuracy of the years-first model was `r y1s2_yr_acc`%, while the years accuracy of the salary-first model was `r s1y2_yr_acc`%. The 2020 models were at 49-51% accuracy, so there's been a significant improvement. Here's some confusion matrices on how each model handled the prediction of contract years.
+
+```{r years_confusion_matrix,fig.show='hold',out.width="50%",echo=FALSE}
+y1_yr_heatmap=combined_predictions %>%
+  conf_mat(data=.,truth=contract_yrs,estimate=yrs_y1s2) %>%
+  autoplot(type="heatmap") +
+  ggtitle("Actual Contract Years vs Predicted Contract Years from Years-First Model")
+ggsave(filename = "Images/Years Predict v Actual, Y1S2 Model.png",plot=y1_yr_heatmap)
+s1_yr_heatmap=combined_predictions %>%
+  conf_mat(data=.,truth=contract_yrs,estimate=yrs_s1y2) %>%
+  autoplot(type="heatmap") +
+  ggtitle("Actual Contract Years vs Predicted Contract Years from Salary-First Model")
+ggsave(filename = "Images/Years Predict v Actual, S1Y2 Model.png",plot=s1_yr_heatmap)
+knitr::include_graphics("Images/Years Predict v Actual, Y1S2 Model.png")
+knitr::include_graphics("Images/Years Predict v Actual, S1Y2 Model.png")
+```
+The incorrect predictions were pessimistic, in that they skewed toward predicting less years than received as evidenced by the sum of the upper triangle being greater than the lower triangle (models forecasting no contract for players who received a one-year contract, one year for players who got two years, etc).
+
+Here are the worst misses for both models.
+
+```{r last_yr_extreme_yr_misses,echo=FALSE,results='asis'}
+yrs_s1y2_misses=combined_predictions %>% 
+                        arrange(desc(contract_yrs),desc(yrs_s1y2)) %>%
+  mutate(abs_error_y1s2_yrs=abs(as.numeric(contract_yrs)-as.numeric(yrs_y1s2))) %>% 
+  slice_max(abs_error_y1s2_yrs,n=5) %>% select(player,yrs_y1s2,contract_yrs)
+yrs_y1s2_misses=combined_predictions %>% 
+                        arrange(desc(contract_yrs),desc(yrs_y1s2)) %>%
+  mutate(abs_error_s1y2_yrs=abs(as.numeric(contract_yrs)-as.numeric(yrs_s1y2))) %>% 
+  slice_max(abs_error_s1y2_yrs,n=5) %>% select(player,yrs_s1y2,contract_yrs)
+knitr::kable(yrs_s1y2_misses)
+knitr::kable(yrs_y1s2_misses)
+```
+
+
+
+```{r last_yr_results,echo=FALSE}
+y1_rmse=rmse(combined_predictions,
+             truth=first_year_percent_of_cap,
+             estimate=y1s2_cap_percent) %>% 
+  pull(.estimate)
+s1_rmse=rmse(combined_predictions,
+             truth=first_year_percent_of_cap,
+             estimate=s1y2_cap_percent) %>%
+  pull(.estimate)
+```
+
+Let's shift our focus to the salary predictions. First, the residual mean squared error of the years-first model was `r y1_rmse`, while the salary-first model had an RMSE of `r s1_rmse`.
+
+As we did with the years models, let's look at the most extreme salary misses.
+
+```{r last_yr_extreme_sal_misses,echo=FALSE}
+sal_y1s2_misses=combined_predictions %>% 
+  mutate(abs_error_y1s2_salary=abs(first_year_percent_of_cap - y1s2_cap_percent)) %>% 
+  slice_max(abs_error_y1s2_salary,n=10) %>%
+  mutate(first_year_percent_of_cap=
+           formattable::percent(first_year_percent_of_cap,digits=2),
+         y1s2_cap_percent=
+           formattable::percent(y1s2_cap_percent,digits=2)) %>%
+  select(player,y1s2_cap_percent,first_year_percent_of_cap)
+sal_s1y2_misses=combined_predictions %>% 
+  mutate(abs_error_s1y2_salary=abs(first_year_percent_of_cap - s1y2_cap_percent)) %>% 
+  slice_max(abs_error_s1y2_salary,n=10) %>% 
+  mutate(first_year_percent_of_cap=
+           formattable::percent(first_year_percent_of_cap,digits=2),
+         s1y2_cap_percent=
+           formattable::percent(s1y2_cap_percent,digits=2)) %>%
+  select(player,s1y2_cap_percent,first_year_percent_of_cap)
+knitr::kable(sal_y1s2_misses)
+knitr::kable(sal_s1y2_misses)
+```
+Schröder miscalculated his market, rejecting a 4-year & $84 million contract extension during the season from the Lakers and ended up settling for a one-year, prove-it contract for the mid-level exception from the Boston Celtics.
+
+On a more positive note, here's some players on which the models were very close on. We'll restrict our view to contracts that had a first year salary that was greater than 5% of the salary cap, as it's easier to get close to minimum & near-minimum contract amounts.
+
+```{r last_yr_extreme_sal_close,echo=FALSE}
+sal_y1s2_close=combined_predictions %>% 
+  filter(contract_yrs %in% c(1:5) & 
+           yrs_y1s2 %in% c(1:5) & 
+           first_year_percent_of_cap > 0.05) %>%
+  mutate(abs_error_y1s2_salary=abs(first_year_percent_of_cap - y1s2_cap_percent)) %>% 
+  slice_min(abs_error_y1s2_salary,n=10) %>%
+  mutate(first_year_percent_of_cap=
+           formattable::percent(first_year_percent_of_cap,digits=2),
+         y1s2_cap_percent=
+           formattable::percent(y1s2_cap_percent,digits=2)) %>%
+  select(player,y1s2_cap_percent,first_year_percent_of_cap)
+sal_s1y2_close=combined_predictions %>% 
+  filter(contract_yrs %in% c(1:5) & 
+           yrs_y1s2 %in% c(1:5) &
+           first_year_percent_of_cap > 0.05) %>%
+  mutate(abs_error_s1y2_salary=abs(first_year_percent_of_cap - s1y2_cap_percent)) %>% 
+  slice_min(abs_error_s1y2_salary,n=10) %>%
+  mutate(first_year_percent_of_cap=
+           formattable::percent(first_year_percent_of_cap,digits=2),
+         s1y2_cap_percent=
+           formattable::percent(s1y2_cap_percent,digits=2)) %>%
+  select(player,s1y2_cap_percent,first_year_percent_of_cap)
+knitr::kable(sal_y1s2_close)
+knitr::kable(sal_s1y2_close)
+```
+
+```{r remove_retrospective_vars,include=FALSE}
+rm(y1_rmse,s1_rmse,y1_yr_heatmap,s1_yr_heatmap,s1y2_yr_acc,y1s2_yr_acc,combined_predictions,
+   sal_s1y2_close,sal_s1y2_misses,sal_y1s2_close,sal_y1s2_misses,yrs_s1y2_misses,yrs_y1s2_misses)
+```
+
