@@ -54,7 +54,7 @@ if(!require(rpart.plot))
   install.packages("rpart.plot", repos = "http://cran.us.r-project.org")
 #kableExtra allows more customization of tables
 if(!require(kableExtra)) 
-  install.packages("kableExtra")
+  install.packages("kableExtra", repos = "http://cran.us.r-project.org")
 if(!require(RColorBrewer)) 
   install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
 #for dark background plots
@@ -166,7 +166,7 @@ past_free_agents<-past_free_agents %>% select(-c(terms,Source)) %>%
   select(-c(yr_1_salary,cap))
 ```
 
-The last file loaded is our evaluation set: the 2022 free agent class, retrieved from Spotrac.I had to edit this dataset to match the Basketball-Reference names (mainly adding diacritics to European names). In addition, I filtered out players with options. Players who decline player options and players who have their team options declined with more than 3 years of experience become unrestricted free agents. Players with less than or equal to 3 years of experience and a declined team option become restricted free agents. I'll use this fact to see which players & teams might decline their option.
+The last file loaded is our evaluation set: the 2022 free agent class, retrieved from Spotrac. I had to edit this dataset to match the Basketball-Reference names (mainly adding diacritics to European names). In addition, I filtered out players with options. Players who decline player options and players who have their team options declined with more than 3 years of experience become unrestricted free agents. Players with less than or equal to 3 years of experience and a declined team option become restricted free agents. I'll use this fact to see which players & teams might decline their option.
 
 ```{r load_eval}
 current_fa<-read_csv("Data/Free Agents 2022.csv")
@@ -290,7 +290,7 @@ sal_s1y2_misses=combined_predictions %>%
 knitr::kable(sal_y1s2_misses)
 knitr::kable(sal_s1y2_misses)
 ```
-Schröder miscalculated his market, rejecting a 4-year & $84 million contract extension during the season from the Lakers and ended up settling for a one-year, prove-it contract for the mid-level exception from the Boston Celtics.
+Schröder miscalculated his market, rejecting a 4-year & `$84M` contract extension during the season from the Lakers and ended up settling for a one-year, prove-it contract for the mid-level exception from the Boston Celtics. Dinwiddie only played Brooklyn's first three games last season before suffering a partial ACL tear, but Washington felt he had recovered enough to give him 3 years & `$54M` in a sign-and-trade. After being bought out by the Cavaliers and a forgettable stint on the Lakers, Drummond went to Philadelphia to back up former adversary Joel Embiid. Batum rewarded the Clippers, who took a flyer on him last year, by taking a below-market deal (much like Carmelo Anthony did with the Trail Blazers last offseason). Trent Jr. was mentioned in last year's project as someone who was being majorly hampered by the models being exceedingly retrospective, because he was "inefficient with minimal contributions in rebounds and assists as well as a negative VORP".
 
 On a more positive note, here's some players on which the models were very close on. We'll restrict our view to contracts that had a first year salary that was greater than 5% of the salary cap, as it's easier to get close to minimum & near-minimum contract amounts.
 
@@ -324,5 +324,68 @@ knitr::kable(sal_s1y2_close)
 ```{r remove_retrospective_vars,include=FALSE}
 rm(y1_rmse,s1_rmse,y1_yr_heatmap,s1_yr_heatmap,s1y2_yr_acc,y1s2_yr_acc,combined_predictions,
    sal_s1y2_close,sal_s1y2_misses,sal_y1s2_close,sal_y1s2_misses,yrs_s1y2_misses,yrs_y1s2_misses)
+```
+
+## Data Exploration and Visualizations
+
+Before we train models, let's see how some of the predictors and some of the targets interact.
+First, let's see how our targets correlate with each other. I've created a box and whisker plot, as well as added the points themselves in a transparent layer with some random variation to differentiate between points.
+
+```{r targets_corr, echo=FALSE, fig.align='center',out.width="100%"}
+set.seed(1) #to make jitter reproducible
+yrs_vs_sal=past_free_agents %>% 
+  ggplot(aes(x=factor(contract_yrs),y=first_year_percent_of_cap)) + 
+  geom_boxplot() + geom_jitter(alpha=0.1,width=0.2) + 
+  labs(x="Contract Years",y="First Year Cap %") +
+  scale_y_continuous(labels = scales::percent) +
+  annotate("text",x=1.5,y=0.3,label=paste0("Correlation Coeff:\n",round(
+    cor(past_free_agents$contract_yrs,
+    past_free_agents$first_year_percent_of_cap),4))) +
+  dark_theme_gray()
+ggsave(filename = "Images/Contract Years Against First Year Salary.png",plot=yrs_vs_sal,
+       width=7.5,height=3.75,units = "in")
+knitr::include_graphics("Images/Contract Years Against First Year Salary.png")
+```
+
+The correlation coefficient is *MISSING*, which shows that the two targets are strongly and positively correlated. The median value of the first year cap % (middle line in each box) increases with an increase in contract length. The highest increase in first year cap % is between a 4-year and 5-year contract.
+
+Next, let's see if an all-encompassing advanced statistic has a relationship with first year cap percentage. Win Shares represent how much a player has contributed to his team's wins by comparing his output to a marginal player. Higher win shares generally indicate a better player.
+
+```{r ws_vs_salary, echo=FALSE, fig.align='center',out.width="100%"}
+ws_vs_sal=past_free_agents %>%
+  ggplot(aes(x=first_year_percent_of_cap,y=ws,color=factor(contract_yrs))) + 
+  geom_point() +
+  scale_colour_brewer(palette="RdYlGn") +
+  labs(x="First Year Cap %",y="Win Shares",color="Contract Years") +
+  annotate("text",x=0.05,y=12.5,
+           label=paste0("Correlation Coeff:\n",round(
+             cor(past_free_agents$ws,past_free_agents$first_year_percent_of_cap),4))) +
+  dark_theme_gray()
+ggsave(filename = "Images/Win Shares Against First Year Salary.png",plot=ws_vs_sal,
+       width=7.5,height=3.75,units = "in")
+knitr::include_graphics("Images/Win Shares Against First Year Salary.png")
+```
+With a correlation coefficient of *MISSING*, win shares are highly correlated with first year cap percentage. This shouldn't be too groundbreaking: better players get paid more.
+
+Finally, let's see how many contracts of each length were given in each offseason.
+
+```{r contracts_by_season, echo=FALSE, fig.align='center',out.width="100%"}
+contract_per_seas=past_free_agents %>%
+  ggplot(aes(x=factor(season),fill=factor(contract_yrs))) +
+  geom_bar(aes(y=..count../tapply(..count.., ..x.. ,sum)[..x..]), 
+           position="dodge") +
+  labs(x="Season",y="Percent of Contracts Given",fill="Contract Years") +
+  scale_fill_brewer(palette="RdYlGn") +
+  scale_y_continuous(labels = scales::percent) +
+  dark_theme_gray()
+ggsave(filename = "Images/Contract Lengths by Offseason.png",plot=contract_per_seas,
+       width=7.5,height=4,units = "in")
+knitr::include_graphics("Images/Contract Lengths by Offseason.png")
+```
+
+It comes as no surprise that as contract length increases, the percent of contracts of that length given out decreases. Although in 2016, the amount of players who didn't receive contracts was lower than the amount who received 1, 2, or 4 year contracts. 2016 was the year of the cap spike, when the salary cap jumped from \$ 70 million to \$ 94 million. Similar to a lot of people with new-found money, teams spent somewhat recklessly. As it was also the first year of record with data, perhaps the number of true free agents was underestimated.
+
+```{r clean_plots,include=FALSE}
+rm(yrs_vs_sal,ws_vs_sal,contract_per_seas)
 ```
 
