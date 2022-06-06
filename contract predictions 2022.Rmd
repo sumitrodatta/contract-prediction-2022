@@ -879,3 +879,175 @@ models<-bind_rows(models,
                   get_sal_metrics(fit_s2_svm,"SVM",tune_svm,train_set_after_y1))
 models %>% knitr::kable()
 ```
+
+### Predicting Salary First, then Years
+
+Now I'll switch up the order, predicting salary first and then years.
+```{r s1_steps}
+set.seed(100)
+cv=vfold_cv(train_set,v=10,strata=type,repeats=5)
+s1_recipe=recipe(first_year_percent_of_cap~.,data=train_set) %>% 
+  update_role(seas_id:player,new_role="id") %>% 
+  step_rm(contract_yrs) %>% step_dummy(type)
+```
+
+```{r lin_sal_indep, fig.align='center',out.width="100%"}
+wf=workflow() %>% add_recipe(s1_recipe) %>% 
+  add_model(linear_reg() %>% 
+              set_engine("lm") %>% 
+              set_mode("regression"))
+tune_lin=wf %>% tune_grid(resamples=cv,metrics=metric_set(rmse,mae))
+wf=wf %>% finalize_workflow(tune_lin %>% select_best(metric="rmse"))
+fit_s1_lin=fit(wf,train_set)
+prettify_vip(fit_s1_lin,"Linear S1 Model Variable Importance")
+```
+
+```{r knn_sal_indep}
+wf=workflow() %>% add_recipe(s1_recipe) %>% 
+  add_model(nearest_neighbor(neighbors=tune()) %>% 
+              set_engine("kknn") %>% 
+              set_mode("regression"))
+tune_knn=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(neighbors=5:50),
+                        metrics=metric_set(rmse,mae))
+wf=wf %>% finalize_workflow(tune_knn %>% select_best(metric="rmse"))
+fit_s1_knn=fit(wf,train_set)
+tune_knn %>% select_best(metric="rmse") %>% knitr::kable()
+```
+
+```{r forest_sal_indep, fig.align='center',out.width="100%"}
+set.seed(100,sample.kind = "Rounding")
+wf=workflow() %>% add_recipe(s1_recipe) %>% 
+  add_model(rand_forest(mtry = tune()) %>% 
+  set_engine("ranger",importance="permutation") %>% set_mode("regression"))
+tune_forest=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(mtry=5:10),
+                        metrics=metric_set(rmse,mae))
+wf=wf %>% finalize_workflow(tune_forest %>% select_best(metric="rmse"))
+fit_s1_forest=fit(wf,train_set)
+tune_forest %>% select_best(metric="rmse") %>% knitr::kable()
+prettify_vip(fit_s1_forest,"Random Forest S1 Model Variable Importance")
+```
+
+```{r svm_sal_indep}
+set.seed(100,sample.kind = "Rounding")
+wf=workflow() %>% add_recipe(s1_recipe) %>% 
+  add_model(svm_rbf(rbf_sigma=tune(),cost=tune()) %>% 
+  set_engine("kernlab") %>% set_mode("regression"))
+tune_svm=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(rbf_sigma=0.1^seq(2:5),
+                                         cost=c(0.25,0.5,1)),
+                        metrics=metric_set(rmse,mae))
+wf=wf %>% finalize_workflow(tune_svm %>% select_best(metric="rmse"))
+fit_s1_svm=fit(wf,train_set)
+tune_svm %>% select_best(metric="rmse") %>% knitr::kable()
+```
+
+Below are the performance metrics for the salary-first models.
+
+```{r s1_metrics,echo=FALSE}
+models<-get_sal_metrics(fit_s1_lin,"Linear",tune_lin,train_set)
+models<-bind_rows(models,
+                  get_sal_metrics(fit_s1_knn,"KNN",tune_knn,train_set),
+                  get_sal_metrics(fit_s1_forest,"Random Forest",tune_forest,
+                                  train_set),
+                  get_sal_metrics(fit_s1_svm,"SVM",tune_svm,train_set))
+models %>% knitr::kable()
+```
+
+Once again, the random forest finishes second to the SVM model in traditional metrics but beats it out in our dataset-specific metrics. All 4 models performed worse when predicting salary-first vs salary-second. With the SVM dipping below 80%, we will use the random forest as our salary prediction.
+
+```{r s1_predict_for_y2}
+train_set_after_s1=train_set %>% select(-first_year_percent_of_cap) %>% 
+  bind_cols(first_year_percent_of_cap=predict(fit_s1_forest,new_data=train_set) %>% 
+              pull())
+cv=vfold_cv(train_set_after_s1,v=10,strata=type,repeats=5)
+y2_recipe=recipe(contract_yrs~.,data=train_set_after_s1) %>% 
+  update_role(seas_id:player,new_role="id") %>% step_dummy(type)
+```
+
+```{r multinom_yrs_dep, fig.align='center',out.width="100%"}
+wf=workflow() %>% add_recipe(y2_recipe) %>% 
+  add_model(multinom_reg(penalty=0) %>% 
+              set_engine("glmnet") %>% 
+              set_mode("classification"))
+tune_multinom=wf %>% tune_grid(resamples=cv,metrics=metric_set(macro_weight_f1))
+wf=wf %>% finalize_workflow(tune_multinom %>% select_best())
+fit_y2_multinom=fit(wf,train_set_after_s1)
+prettify_vip(fit_y2_multinom,"Multinomial Y2 Model Variable Importance")
+```
+
+```{r knn_yrs_dep}
+wf=workflow() %>% add_recipe(y2_recipe) %>% 
+  add_model(nearest_neighbor(neighbors = tune()) %>% 
+  set_engine("kknn") %>% set_mode("classification"))
+tune_knn=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(neighbors=5:50),
+                        metrics=metric_set(macro_weight_f1))
+wf=wf %>% finalize_workflow(tune_knn %>% select_best())
+fit_y2_knn=fit(wf,train_set_after_s1)
+tune_knn %>% select_best() %>% knitr::kable()
+```
+
+```{r decision_tree_yrs_dep, fig.align='center',out.width="100%"}
+set.seed(100,sample.kind = "Rounding")
+wf=workflow() %>% add_recipe(y2_recipe) %>% 
+  add_model(decision_tree(cost_complexity = tune(),min_n=tune()) %>% 
+  set_engine("rpart") %>% set_mode("classification"))
+tune_tree=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(cost_complexity=0.1^seq(2,5),
+                                         min_n=seq(1:10)),
+                        metrics=metric_set(macro_weight_f1))
+wf=wf %>% finalize_workflow(tune_tree %>% select_best())
+fit_y2_tree=fit(wf,train_set_after_s1)
+tune_tree %>% select_best() %>% knitr::kable()
+prettify_vip(fit_y2_tree,"Decision Tree Y2 Model Variable Importance")
+```
+
+```{r decision_tree_dep, echo=FALSE, fig.align='center',out.width="100%"}
+rpart.plot(pull_workflow_fit(fit_y2_tree)$fit,
+                  roundint = FALSE,legend.x=NA,extra=0)
+```
+
+```{r rand_forest_yrs_dep, fig.align='center',out.width="100%"}
+set.seed(100,sample.kind = "Rounding")
+wf=workflow() %>% add_recipe(y2_recipe) %>% 
+  add_model(rand_forest(mtry = tune()) %>% 
+  set_engine("ranger",importance="permutation") %>% set_mode("classification"))
+tune_forest=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(mtry=5:10),
+                        metrics=metric_set(macro_weight_f1))
+wf=wf %>% finalize_workflow(tune_forest %>% select_best())
+fit_y2_forest=fit(wf,train_set_after_s1)
+tune_forest %>% select_best() %>% knitr::kable()
+prettify_vip(fit_y2_forest,"Random Forest Y2 Model Variable Importance")
+```
+
+```{r svm_yrs_dep}
+set.seed(100,sample.kind = "Rounding")
+wf=workflow() %>% add_recipe(y2_recipe) %>% 
+  add_model(svm_rbf(rbf_sigma=tune(),cost=tune()) %>% 
+  set_engine("kernlab") %>% set_mode("classification"))
+tune_svm=wf %>% tune_grid(resamples=cv,
+                        grid=expand.grid(rbf_sigma=0.1^seq(2:5),
+                                         cost=c(0.25,0.5,1)),
+                        metrics=metric_set(macro_weight_f1))
+wf=wf %>% finalize_workflow(tune_svm %>% select_best())
+fit_y2_svm=fit(wf,train_set_after_s1)
+tune_svm %>% select_best() %>% knitr::kable()
+```
+
+Last but not least, here are the years performance metrics of the S1Y2 model.
+
+```{r y2_metrics,echo=FALSE}
+models<-get_yrs_metrics(fit_y2_multinom,"Multinomial",tune_multinom,train_set_after_s1)
+models<-bind_rows(models,
+                  get_yrs_metrics(fit_y2_knn,"KNN",tune_knn,train_set_after_s1),
+                  get_yrs_metrics(fit_y2_tree,"Decision Tree",tune_tree,train_set_after_s1),
+                  get_yrs_metrics(fit_y2_forest,"Random Forest",tune_forest,
+                                  train_set_after_s1),
+                  get_yrs_metrics(fit_y2_svm,"SVM",tune_svm,train_set_after_s1))
+models %>% knitr::kable()
+```
+
+The random forest drops to third in F1 score, but has no predictions that are off by more than one year. We will use the random forest as the sole model to generate Y2 predictions.
