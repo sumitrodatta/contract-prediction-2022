@@ -555,7 +555,7 @@ As we saw in data visualization, the two target variables (contract years and fi
 * choose the best model (be that a single model or an ensemble of multiple models)
 * use the first target's predictions as an input to predict the second target
 
-One potential problem is compounding errors. If there's an incorrect year prediction, it might lead to an incorrect salary prediction. To alleviate this problem, we'll utilize tidymodels' ability to run multivariate models with more than one outcome. The drawback is the outcomes must be of the same type, so we will have to undo the contract years conversion done in the last section.
+One potential problem is compounding errors. If there's an incorrect year prediction, it might lead to an incorrect salary prediction. Initially, to alleviate this problem, I thought it would be sufficient to utilize tidymodels' ability to run multivariate models with more than one outcome. However, I realized that tuning wasn't yet implemented with multi-output regression, and I'm uneasy about choosing arbitrary parameters. An additional (minor) drawback is the outcomes must be of the same type, so we would undo the contract years conversion done in the last section.
 
 ### The Models
 
@@ -1051,3 +1051,111 @@ models %>% knitr::kable()
 ```
 
 The random forest drops to third in F1 score, but has no predictions that are off by more than one year. We will use the random forest as the sole model to generate Y2 predictions.
+
+```{r remove_unused_future_vars,include=FALSE}
+rm(fit_s1_knn,fit_s1_lin,fit_s1_svm,
+   fit_y1_knn,fit_y1_multinom,fit_y1_tree,fit_y1_svm,
+   fit_s2_knn,fit_s2_lin,
+   fit_y2_multinom,fit_y2_knn,fit_y2_tree,fit_y2_svm,
+   tune_lin,tune_multinom,tune_knn,tune_tree,tune_forest,tune_svm,
+   train_set_after_s1,train_set_after_y1,
+   y1_recipe,y2_recipe,s1_recipe,s2_recipe,wf,cv,models)
+```
+# Results
+
+Now it's time to run on the 2022 data.
+
+## Years First, Salary Second
+
+As a reminder, we're using a random forest as our years prediction, and using the mean of a random forest and SVM to predict salary.
+
+```{r eval_set}
+eval_set=inner_join(three_year_rolling_stats,current_fa) %>% 
+  left_join(.,all_player_pos) %>% group_by(season,pos_group) %>% 
+  mutate(position_vorp=sum(vorp_last_3_yrs)) %>% ungroup() %>%
+  mutate(percent_of_pos_vorp=vorp_last_3_yrs/position_vorp) %>%
+  mutate(contract_yrs=factor(contract_yrs,levels = 0:5)) %>%
+  select(-c(pos,pos_group,position_vorp)) %>%
+  mutate(across(-c(seas_id:experience,type:contract_yrs),~round(.,digits=4)))
+write_csv(eval_set,"Data/Eval Set.csv")
+```
+
+```{r y1s2_predictions}
+eval_y1_predict=as.numeric(as.character(
+  predict(fit_y1_forest,new_data=eval_set) %>% pull()))
+eval_s2_predict_forest=predict(fit_s2_forest,
+                               new_data=eval_set %>% select(-contract_yrs) %>%
+                                 bind_cols(contract_yrs=eval_y1_predict))
+eval_s2_predict_svm=predict(fit_s2_svm,
+                               new_data=eval_set %>% select(-contract_yrs) %>%
+                                 bind_cols(contract_yrs=eval_y1_predict))
+eval_s2_predict=tibble(forest=eval_s2_predict_forest %>% pull(),
+                       svm=eval_s2_predict_svm %>% pull()) %>% rowwise() %>%
+  mutate(m=mean(c_across(forest:svm))) %>% ungroup() %>% pull(m) 
+```
+## Salary First, Years Second
+
+For the S1Y2 model, we are using random forests for each component.
+```{r s1y2_predictions}
+eval_s1_predict=predict(fit_s1_forest,new_data=eval_set) %>% pull()
+eval_y2_predict=as.numeric(as.character(
+  predict(fit_y2_forest,new_data=eval_set %>% select(-first_year_percent_of_cap) %>%
+            bind_cols(first_year_percent_of_cap=eval_s1_predict)) %>% 
+  pull()))
+```
+
+## Player Option Decisions and Selected Free Agents
+
+Before I look at which players might be accepting or declining their option and then some selected high-profile free agents, let's look at the distribution of contract years.
+
+```{r both_model_results,include=FALSE}
+final_results<-eval_set %>% 
+  select(-c(contract_yrs,first_year_percent_of_cap)) %>%
+  add_column(yrs_Y1S2=eval_y1_predict,
+             yr1_cap_percent_Y1S2=eval_s2_predict,
+             yrs_S1Y2=eval_y2_predict,
+             yr1_cap_percent_S1Y2=eval_s1_predict)
+```
+```{r yrs_dist,echo=FALSE,results='asis'}
+y1s2=kable(final_results %>% group_by(yrs_Y1S2) %>% tally())
+s1y2=kable(final_results %>% group_by(yrs_S1Y2) %>% tally())
+cat(c("\\begin{table}[h]",y1s2,"\\hspace{1cm} \\centering ",s1y2,"\\end{table}"))
+```
+
+Two years ago on the first iteration of this project, both the Y1S2 & the S1Y2 had only 4-5 players being out of the league. This didn't make sense, as the annual rookie draft brings in at least 30 new players. The problem was that there were players who were predicted to receive 1 year contracts but receiving salaries that were less than the minimum. My solution was to convert any salary predictions less than the minimum to zero, and any years predictions to zero where the salary prediction is zero.
+
+For the 2022-2023 season, the salary cap is \$122,000,000. The minimum contract (from [RealGM](https://basketball.realgm.com/nba/info/salary_cap)) is \$1,616,044. Therefore the minimum first year percent of cap in 2021 is  `r formattable::percent(1616044/122000000,digits=2)`.
+
+```{r convert_less_than_mins}
+first_yr_min=1616044/122000000
+final_results<-final_results %>% 
+  mutate(yrs_Y1S2=ifelse(yr1_cap_percent_Y1S2<=first_yr_min,0,yrs_Y1S2)) %>%
+  mutate(yr1_cap_percent_Y1S2=ifelse(yrs_Y1S2==0,0,yr1_cap_percent_Y1S2)) %>%
+  mutate(yrs_S1Y2=ifelse(yr1_cap_percent_S1Y2<=first_yr_min,0,yrs_S1Y2)) %>%
+  mutate(yr1_cap_percent_S1Y2=ifelse(yrs_S1Y2==0,0,yr1_cap_percent_S1Y2))
+```
+```{r yrs_dist_corrected,echo=FALSE, results='asis'}
+y1s2_correct=kable(final_results %>% group_by(yrs_Y1S2) %>% tally())
+s1y2_correct=kable(final_results %>% group_by(yrs_S1Y2) %>% tally())
+cat(c("\\begin{table}[h]",y1s2_correct,"\\hspace{1cm} \\centering ",
+      s1y2_correct,"\\end{table}"))
+```
+
+The Y1S2 predictions remain unchanged, while some 1-year and one 2-year contract in the S1Y2 predictions got converted to 0-year due to the salary being below the minimum threshold.
+
+Another task is to make the information more digestible. Contracts are usually reported in terms of total value, and players usually get five percent raises per year, so I'll add a column for each method for total contract value assuming the projected cap value of $122 million.
+```{r total_val_add}
+final_results<-final_results %>% 
+  mutate(total_Y1S2=
+           round(yr1_cap_percent_Y1S2*122000000*((1.05)^(yrs_Y1S2)-1)/0.05,digits=-4),
+         total_S1Y2=
+             round(yr1_cap_percent_S1Y2*122000000*((1.05)^(yrs_S1Y2)-1)/0.05,digits=-4))
+```
+
+```{r format_table,include=FALSE}
+final_results<-final_results %>%
+  mutate(total_Y1S2=currency(total_Y1S2,digits=0),
+         total_S1Y2=currency(total_S1Y2,digits=0),
+         yr1_cap_percent_Y1S2=formattable::percent(yr1_cap_percent_Y1S2,digits=2),
+         yr1_cap_percent_S1Y2=formattable::percent(yr1_cap_percent_S1Y2,digits=2))
+```
