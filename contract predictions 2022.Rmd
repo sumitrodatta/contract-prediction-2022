@@ -18,6 +18,24 @@ knitr::opts_chunk$set(cache=TRUE,
 
 # Introduction
 
+This is my third year attempting to predict NBA free agent contracts using machine learning. What ended up happening last year?
+
+* **Kawhi Leonard** & **Chris Paul** both opted out of their player options & re-signed with their teams.
+    + Kawhi signed a [4-year, `$176M` contract](https://www.nba.com/news/report-kawhi-leonard-plans-to-re-sign-with-clippers) with the Los Angeles Clippers while CP3 agreed to a [4-year `$120M` deal](https://www.cbssports.com/nba/news/nba-free-agency-2021-chris-paul-officially-re-signs-with-suns-on-four-year-deal/) with the Phoenix Suns
+* Restricted free agents **John Collins** and **Jarrett Allen** cashed in, signing 5-year deals with their current teams.
+    + Collins' deal with the Atlanta Hawks is worth [`$125M`](https://nba.nbcsports.com/2021/08/04/john-collins-re-signing-with-hawks-on-five-year-125m-contract/), while Allen got [`$100M`](https://bleacherreport.com/articles/2946293-jarrett-allen-re-signs-with-cavaliers-on-5-year-100m-contract-in-free-agency)
+* Restricted free agent **Lonzo Ball** and unrestricted free agents **DeMar DeRozan** & **Kyle Lowry** all switched teams via sign-and-trade
+    + Lonzo [4-year,`$80M`](https://www.sportsnet.ca/nba/article/bulls-officially-acquire-lonzo-ball-sign-trade-pelicans/) & DeRozan [3-year,`$85M`](https://www.espn.com/nba/story/_/id/31951447/chicago-bulls-demar-derozan-finalizing-sign-trade-deal) joined forces on the Chicago Bulls with shooting guard Zach LaVine and center Nikola Vucevic. The two were former opponents in the Southwest division, with Lonzo a former member of the New Orleans Pelicans and DeRozan being a San Antonio Spur
+    + Lowry joined up with Jimmy Butler & the Miami Heat on a [3-year,`$85M` contract](https://basketball.realgm.com/wiretap/263770/Kyle-Lowry-Signs-Three-Year-$85M-Deal-With-Heat) (coincidentally the same contract as his best friend DeRozan) after 9 seasons with the Toronto Raptors. That Raptors tenure included 6 All-Star appearances, franchise records in 3-point field goals made, assists and steals, and of course an NBA championship in 2019.
+
+The top of this year's class is headlined by 4 star guards holding player options, meaning they may not even hit the market if they pick their options up. **James Harden** & **Kyrie Irving** started the season together on the Brooklyn Nets along w/Kevin Durant as one of the presumptive championship favorites. However, issues plagued the duo. Due to his refusal to being vaccinated, Kyrie was not allowed to play in home games by New York City's mayor's mandate and ended up playing a total of 27 games. Harden struggled with conditioning & lack of explosiveness, and was traded at the deadline to the Philadelphia 76ers, teaming up with MVP candidate center Joel Embiid as well as his former Houston Rockets GM Daryl Morey. **Bradley Beal** of the Washington Wizards shot a career-low 30% from the three-point line, and his season ended in February after only 40 games due to required surgery on his left wrist. **Russell Westbrook** had a tumultuous season after being traded from the Wizards to the Los Angeles Lakers, attempting to adjust his ball-dominant playstyle alongside LeBron James. He faced numerous calls to be moved out of the starting five.
+
+In terms of restricted free agents, the top players are **Deandre Ayton, Miles Bridges** & **Anfernee Simons**. Ayton was the man in the middle for the Phoenix Suns, serving a nice complement to the perimeter games of guards Chris Paul & Devin Booker. But after failing to reach a contract extension before the season and the Suns being handed an embarrassing home-court loss in Game 7 of the Western Conference Finals against the Dallas Mavericks, the former No. 1 overall pick is more likely to start next season in a different jersey. Bridges was given more opportunity, starting all 80 games he played for the Charlotte Hornets and leading the team in scoring at 20.2 points per game. Simons continues the great lineage of Portland Trail Blazers guards. He averaged 17 points per game in 57 games and 40% shooting from the 3-point line on almost 8 attempts a game, in a season where the Blazers star point guard Damian Lillard was limited to 29 games due to an abdominal injury and shooting guard CJ McCollum was traded to the New Orleans Pelicans at the trade deadline.
+
+On the unrestricted free agent side, we've got **Zach LaVine, Jalen Brunson** & **Mitchell Robinson** topping the lists. LaVine finally made the playoffs last year for the first time in his eight-season career, with big help coming from free-agent reinforcements Ball, DeRozan & Alex Caruso. Now, the question is if LaVine believes in what VP of Basketball Ops Arturas Karnisovas & GM Marc Eversley are building, or is he looking for greener pastures? Brunson had a career year, moving into the Dallas Mavericks starting lineup as a secondary playmaker alongside superstar Luka Doncic. He averaged 16.3 points per game and 4.8 assists per game in the regular season but shone brighter in the postseason, averaging 21.6 PPG in the Mavs' run to the Western Conference Finals. Robinson has spent the past 4 years calling Madison Square Garden home, and set the season record for field goal percentage in 2020 with 74.2%. How much is a rim-running, shot-blocking, athletic freak worth these days to NBA teams? 
+
+What I wanted to do was predict what contracts this year's free agent class might get based off previous offseasons. Stars generally get star-type money, but in tiers below, contracts of comparable players usually come up in discussing contract value.
+
 # Methods/Analysis
 
 ## Loading Packages
@@ -78,7 +96,7 @@ For the statistical data, I've scraped total and advanced stats from Basketball-
 
 The advanced stats I kept were cumulative (offensive win shares, defensive win shares and value over replacement player). For players who played on multiple teams in one season, I kept their total stats and discarded the team-specific season portions. There was an initial desire to use totals to bake in availability/body fragility, but the shortened seasons would cause the model to declare all players to be fragile and underestimate their contract.
 
-In the previous iteration of this project, we scaled games played and games started to a normal distribution due to fluctuations in games played between seasons caused by the COVID-19 pandemic. We will convert the games started to a percentage of games played and we will change the games played to a percentage of maximum playable games. This maximum will differ for players who played for multiple teams in one season.
+In the first iteration of this project, we scaled games played and games started to a normal distribution due to fluctuations in games played between seasons caused by the COVID-19 pandemic. We will convert the games started to a percentage of games played and we will change the games played to a percentage of maximum playable games. This maximum will differ for players who played for multiple teams in one season.
 ```{r load_stats}
 #specify columns because otherwise birth year is read as logical
 cols_for_stats=cols(
@@ -325,7 +343,7 @@ sal_s1y2_close=combined_predictions %>%
 knitr::kable(sal_y1s2_close)
 knitr::kable(sal_s1y2_close)
 ```
-
+Both Phoenix Suns point guards with the initials CP show up on both hit-lists. Other players that were near-spot on by both models include Brooklyn Nets point guard Patty Mills, Charlotte Hornets wing Kelly Oubre Jr, New York Knicks big Nerlens Noel and Toronto Raptors big Khem Birch.
 ```{r remove_retrospective_vars,include=FALSE}
 rm(y1_rmse,s1_rmse,y1_yr_heatmap,s1_yr_heatmap,s1y2_yr_acc,y1s2_yr_acc,combined_predictions,
    sal_s1y2_close,sal_s1y2_misses,sal_y1s2_close,sal_y1s2_misses,yrs_s1y2_misses,yrs_y1s2_misses)
@@ -1158,4 +1176,60 @@ final_results<-final_results %>%
          total_S1Y2=currency(total_S1Y2,digits=0),
          yr1_cap_percent_Y1S2=formattable::percent(yr1_cap_percent_Y1S2,digits=2),
          yr1_cap_percent_S1Y2=formattable::percent(yr1_cap_percent_S1Y2,digits=2))
+```
+
+### Player Option Decisions
+
+```{r join_options,echo=FALSE}
+options_decisions=inner_join(final_results,current_fa_options) %>%
+  arrange(desc(option_amt)) %>%
+  rename("Y1S2 Cap %"=yr1_cap_percent_Y1S2,
+         "S1Y2 Cap %"=yr1_cap_percent_S1Y2,
+         "Option Type"=option_type,
+         "2021 Option"=option_amt) %>%
+  select(player,"Y1S2 Cap %",yrs_Y1S2,total_Y1S2,"S1Y2 Cap %",yrs_S1Y2,
+         total_S1Y2,"Option Type", "2021 Option")
+kable(options_decisions) %>%
+  kable_styling(latex_options="scale_down")
+```
+
+### Selected Free Agents
+
+Now let's see what the models have predicted for this year's other notable free agents. I'll present them five at a time and comment on some projections. We'll look at restricted free agents first.
+
+```{r non_option_contracts,echo=FALSE}
+non_options=anti_join(final_results,current_fa_options %>% select(player)) %>%
+  arrange(desc((yr1_cap_percent_Y1S2+yr1_cap_percent_S1Y2)/2)) %>%
+  rename("Y1S2 Cap %"=yr1_cap_percent_Y1S2, "S1Y2 Cap %"=yr1_cap_percent_S1Y2) %>%
+  select(player,age,type,"Y1S2 Cap %",yrs_Y1S2,total_Y1S2,"S1Y2 Cap %",yrs_S1Y2,total_S1Y2)
+```
+```{r rfas_top_five,echo=FALSE}
+non_options %>% filter(type=="RFA") %>% select(-type) %>% slice(1:5) %>% 
+  kable() %>% kable_styling(latex_options="scale_down")
+```
+
+```{r rfas_five_to_ten,echo=FALSE}
+non_options %>% filter(type=="RFA") %>% select(-type) %>% slice(6:10) %>% 
+  kable() %>% kable_styling(latex_options="scale_down")
+```
+
+On to the unrestricted free agents.
+```{r ufas_top_five,echo=FALSE}
+non_options %>% filter(type=="UFA") %>% select(-type) %>% slice(1:5) %>% 
+  kable() %>% kable_styling(latex_options="scale_down")
+```
+
+```{r ufas_mid_five,echo=FALSE}
+non_options %>% filter(type=="UFA") %>% select(-type) %>% slice(6:10) %>% 
+  kable() %>% kable_styling(latex_options="scale_down")
+```
+
+```{r ufas_last_five,echo=FALSE}
+non_options %>% filter(type=="UFA") %>% select(-type) %>% slice(11:15) %>% 
+  kable() %>% kable_styling(latex_options="scale_down")
+```
+
+```{r save_as_csvs,include=FALSE}
+write_csv(options_decisions,"Options.csv")
+write_csv(non_options,"Non-Option Contracts.csv")
 ```
