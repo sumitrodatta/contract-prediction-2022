@@ -36,6 +36,8 @@ On the unrestricted free agent side, we've got **Zach LaVine, Jalen Brunson** & 
 
 What I wanted to do was predict what contracts this year's free agent class might get based off previous offseasons. Stars generally get star-type money, but in tiers below, contracts of comparable players usually come up in discussing contract value.
 
+\newpage
+
 # Methods/Analysis
 
 ## Loading Packages
@@ -84,11 +86,9 @@ if(!require(ggdark))
 #easy formatting of numbers as currency & percent
 if(!require(formattable)) 
   install.packages("ggdark", repos = "http://cran.us.r-project.org")
-#for timing runs
-if(!require(tictoc)) 
-  install.packages("tictoc", repos = "http://cran.us.r-project.org")
-
 ```
+
+\newpage
 
 ## Importing the Data
 
@@ -131,6 +131,8 @@ advanced_and_totals<-left_join(totals_enhanced,advanced) %>%
   #filter for only last ten years for faster pre-processing
   filter(season > 2009) %>% ungroup()
 ```
+
+\newpage
 
 A comment was raised last year regarding positional scarcity. Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that is deemed to be the last one in a talent tier above the remaining free agents in the same position. 
 
@@ -315,6 +317,8 @@ knitr::kable(sal_s1y2_misses)
 ```
 Schröder miscalculated his market, rejecting a 4-year & `$84M` contract extension during the season from the Lakers and ended up settling for a one-year, prove-it contract for the mid-level exception from the Boston Celtics. Dinwiddie only played Brooklyn's first three games last season before suffering a partial ACL tear, but Washington felt he had recovered enough to give him 3 years & `$54M` in a sign-and-trade. After being bought out by the Cavaliers and a forgettable stint on the Lakers, Drummond went to Philadelphia to back up former adversary Joel Embiid. Batum rewarded the Clippers, who took a flyer on him last year, by taking a below-market deal (much like Carmelo Anthony did with the Trail Blazers last offseason). Trent Jr. was mentioned in last year's project as someone who was being majorly hampered by the models being exceedingly retrospective, because he was "inefficient with minimal contributions in rebounds and assists as well as a negative VORP".
 
+\newpage
+
 On a more positive note, here's some players on which the models were very close on. We'll restrict our view to contracts that had a first year salary that was greater than 5% of the salary cap, as it's easier to get close to minimum & near-minimum contract amounts.
 
 ```{r last_yr_extreme_sal_close,echo=FALSE}
@@ -348,6 +352,8 @@ Both Phoenix Suns point guards with the initials CP show up on both hit-lists. O
 rm(y1_rmse,s1_rmse,y1_yr_heatmap,s1_yr_heatmap,s1y2_yr_acc,y1s2_yr_acc,combined_predictions,
    sal_s1y2_close,sal_s1y2_misses,sal_y1s2_close,sal_y1s2_misses,yrs_s1y2_misses,yrs_y1s2_misses)
 ```
+
+\newpage
 
 ## Data Exploration and Visualizations
 
@@ -562,6 +568,7 @@ train_set=inner_join(three_year_rolling_stats,past_free_agents) %>%
   mutate(across(-c(seas_id:experience,type:contract_yrs),~round(.,digits=4)))
 write_csv(train_set,"Data/Train Set.csv")
 ```
+\newpage
 
 ## Training Models
 
@@ -683,7 +690,6 @@ macro_weight_f1 <- new_class_metric(macro_weight_f1,"maximize")
 ```
 First up is the multinomial regression model.
 ```{r multinom_yrs_indep}
-tic()
 wf=workflow() %>% add_recipe(y1_recipe) %>% 
   add_model(multinom_reg(penalty=0) %>% 
               set_engine("glmnet") %>% 
@@ -692,7 +698,6 @@ tune_multinom=wf %>% tune_grid(resamples=cv,
                                metrics=metric_set(macro_weight_f1))
 wf=wf %>% finalize_workflow(tune_multinom %>% select_best())
 fit_y1_multinom=fit(wf,train_set)
-toc()
 ```
 
 Let's get the most important variables of the multinomial model.
@@ -704,7 +709,6 @@ The new percent of positional VORP variable is the most important variable, whic
 
 Next up is the k-nearest neighbors model.
 ```{r knn_yrs_indep}
-tic()
 wf=workflow() %>% add_recipe(y1_recipe) %>% 
   add_model(nearest_neighbor(neighbors = tune()) %>% 
   set_engine("kknn") %>% set_mode("classification"))
@@ -714,14 +718,12 @@ tune_knn=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_knn %>% select_best())
 fit_y1_knn=fit(wf,train_set)
 tune_knn %>% select_best() %>% knitr::kable()
-toc()
 ```
 Looks like the best knn model is right at the upper limit of the tune grid with using 50 closest comparable players.
 
 
 The next model is the decision tree model. We can tune the cost complexity parameter (cp) in this model. CP is the minimum for how much the residual sum of squares must improve for another partition to be added. A CP that is too high will have too few branches, while a CP that is too low will be difficult to follow since there are many branches. We lean towards the lower end of the spectrum. We will also change the min_n, which is the minimum number of data points in a node that are required for the node to be split further. The default is 20, but the 5-year portion of the dataset is small, so we will decrease min_n to 1. Since there exists an element of randomness in choosing samples to model a decision tree, we need to set a seed to keep the work reproducible.
 ```{r decision_tree_yrs_indep}
-tic()
 set.seed(100,sample.kind = "Rounding")
 wf=workflow() %>% add_recipe(y1_recipe) %>% 
   add_model(decision_tree(cost_complexity = tune(),min_n=tune()) %>% 
@@ -733,7 +735,6 @@ tune_tree=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_tree %>% select_best())
 fit_y1_tree=fit(wf,train_set)
 tune_tree %>% select_best() %>% knitr::kable()
-toc()
 ```
 
 Let's get the most important variables of the decision_tree model.
@@ -766,7 +767,6 @@ Random forest algorithms require an explicit call for variable importance, so we
     + the default is 1 for a classification problem like this, which we'll keep
     
 ```{r rand_forest_yrs_indep}
-tic()
 set.seed(100,sample.kind = "Rounding")
 wf=workflow() %>% add_recipe(y1_recipe) %>% 
   add_model(rand_forest(mtry = tune()) %>% 
@@ -777,7 +777,6 @@ tune_forest=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_forest %>% select_best())
 fit_y1_forest=fit(wf,train_set)
 tune_forest %>% select_best() %>% knitr::kable()
-toc()
 ```
 
 ```{r rand_forest_top_vars,echo=FALSE, fig.align='center',out.width="100%"}
@@ -794,7 +793,6 @@ Finally, we train the support vector machine on the model. There are two tuning 
     + tests using C=0.25, C=0.5 and C=1
     
 ```{r svm_yrs_indep}
-tic()
 set.seed(100,sample.kind = "Rounding")
 wf=workflow() %>% add_recipe(y1_recipe) %>% 
   add_model(svm_rbf(rbf_sigma=tune(),cost=tune()) %>% 
@@ -806,7 +804,6 @@ tune_svm=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_svm %>% select_best())
 fit_y1_svm=fit(wf,train_set)
 tune_svm %>% select_best() %>% knitr::kable()
-toc()
 ```
 Unfortunately, there is no concept of variable importance for an SVM model.
 
@@ -842,7 +839,6 @@ s2_recipe=recipe(first_year_percent_of_cap~.,data=train_set_after_y1) %>%
 Now I can run through the models for salary using the predicted years as an input. The models I won't reuse are the multinomial model and the decision tree. The multinomial model is for classification only, while we are attempting to predict a continuous outcome in the first year salary as a percentage of the salary cap. We'll sub in a linear regression model as our new baseline. Since there's so many different salary percentages, a decision tree model would be useless or far too complicated.
 
 ```{r lin_sal_dep, fig.align='center',out.width="100%"}
-tic()
 wf=workflow() %>% add_recipe(s2_recipe) %>% 
   add_model(linear_reg() %>% 
               set_engine("lm") %>% 
@@ -850,13 +846,12 @@ wf=workflow() %>% add_recipe(s2_recipe) %>%
 tune_lin=wf %>% tune_grid(resamples=cv,metrics=metric_set(rmse,mae))
 wf=wf %>% finalize_workflow(tune_lin %>% select_best(metric="rmse"))
 fit_s2_lin=fit(wf,train_set_after_y1)
-toc()
+
 prettify_vip(fit_s2_lin,"Linear S2 Model Variable Importance")
 ```
 Contract years dwarf all other variables in terms of importance.
 
 ```{r knn_sal_dep}
-tic()
 wf=workflow() %>% add_recipe(s2_recipe) %>% 
   add_model(nearest_neighbor(neighbors=tune()) %>% 
               set_engine("kknn") %>% 
@@ -867,13 +862,11 @@ tune_knn=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_knn %>% select_best(metric="rmse"))
 fit_s2_knn=fit(wf,train_set_after_y1)
 tune_knn %>% select_best(metric="rmse") %>% knitr::kable()
-toc()
 ```
 
 The best knn salary model is around the middle of the tune grid, using 24 comparables.
 
 ```{r forest_sal_dep, fig.align='center',out.width="100%"}
-tic()
 set.seed(100,sample.kind = "Rounding")
 wf=workflow() %>% add_recipe(s2_recipe) %>% 
   add_model(rand_forest(mtry = tune()) %>% 
@@ -884,14 +877,13 @@ tune_forest=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_forest %>% select_best(metric="rmse"))
 fit_s2_forest=fit(wf,train_set_after_y1)
 tune_forest %>% select_best(metric="rmse") %>% knitr::kable()
-toc()
+
 prettify_vip(fit_s2_forest,"Random Forest S2 Model Variable Importance")
 ```
 
 Like the linear model, contract years are by far the most important variable in the random forest model, although not to the same extent.
 
 ```{r svm_sal_dep}
-tic()
 set.seed(100,sample.kind = "Rounding")
 wf=workflow() %>% add_recipe(s2_recipe) %>% 
   add_model(svm_rbf(rbf_sigma=tune(),cost=tune()) %>% 
@@ -903,7 +895,6 @@ tune_svm=wf %>% tune_grid(resamples=cv,
 wf=wf %>% finalize_workflow(tune_svm %>% select_best(metric="rmse"))
 fit_s2_svm=fit(wf,train_set_after_y1)
 tune_svm %>% select_best(metric="rmse") %>% knitr::kable()
-toc()
 ```
 
 Here are the performance metrics for the salary portion of the Y1S2 model. 
@@ -1113,6 +1104,13 @@ rm(fit_s1_knn,fit_s1_lin,fit_s1_svm,
 
 Now it's time to run on the 2022 data.
 
+Since the models depend on contract year stats, these players were removed from the evaluation set:
+```{r removed, echo=FALSE}
+anti_join(current_fa,three_year_rolling_stats) %>% 
+  select(player,type) %>% knitr::kable() %>%
+  kable_styling(latex_options = "HOLD_position",fixed_thead = T) %>% row_spec(0,bold=T)
+```
+
 ## Years First, Salary Second
 
 As a reminder, we're using a random forest as our years prediction, and using the mean of a random forest and SVM to predict salary.
@@ -1208,6 +1206,7 @@ final_results<-final_results %>%
          yr1_cap_percent_S1Y2=formattable::percent(yr1_cap_percent_S1Y2,digits=2))
 ```
 
+\newpage
 ### Player Option Decisions
 
 ```{r join_options,echo=FALSE}
@@ -1220,12 +1219,15 @@ options_decisions=inner_join(final_results,current_fa_options) %>%
   select(player,"Y1S2 Cap %",yrs_Y1S2,total_Y1S2,"S1Y2 Cap %",yrs_S1Y2,
          total_S1Y2,"Option Type", "2021 Option")
 kable(options_decisions) %>%
-  kable_styling(latex_options="scale_down")
+  kable_styling(latex_options="scale_down") %>%
+kable_styling(latex_options = "HOLD_position")
 ```
 
-### Selected Free Agents
+Let's look at the elephant in the room first: Beal is in-line for a max or near-max contract in real life. He is a gifted scorer, finishing as the runner-up in the scoring race in both 2020 (30.5 to Harden's 34.3) and 2021 (31.3 to Stephen Curry's 32). His per-year actual salary may very well eclipse the total contract values predicted here. The reasoning behind the low prediction is Beal's games played percentages (49% in the contract year and 70% over the last three years). This in turn affected his offensive & defensive win shares as well as his VORP, which are all cumulative stats. Another interesting case is Bobby Portis, who's projected for 4-year contracts with a total value ranging between \$ 64M & \$ 72M. It was rumored he gave the Milwaukee Bucks a "hometown discount" in an attempt to fortify the team to win a second consecutive championship, while retaining flexibility to hit the market by making the second year a player option.
 
-Now let's see what the models have predicted for this year's other notable free agents. I'll present them five at a time and comment on some projections. We'll look at restricted free agents first.
+\newpage
+
+### Selected Free Agents
 
 ```{r non_option_contracts,echo=FALSE}
 non_options=anti_join(final_results,current_fa_options %>% select(player)) %>%
@@ -1233,33 +1235,60 @@ non_options=anti_join(final_results,current_fa_options %>% select(player)) %>%
   rename("Y1S2 Cap %"=yr1_cap_percent_Y1S2, "S1Y2 Cap %"=yr1_cap_percent_S1Y2) %>%
   select(player,age,type,"Y1S2 Cap %",yrs_Y1S2,total_Y1S2,"S1Y2 Cap %",yrs_S1Y2,total_S1Y2)
 ```
+
+Now let's see what the models have predicted for this year's other notable free agents. I'll present them five at a time and comment on some projections. We'll look at restricted free agents first.
+
 ```{r rfas_top_five,echo=FALSE}
 non_options %>% filter(type=="RFA") %>% select(-type) %>% slice(1:5) %>% 
-  kable() %>% kable_styling(latex_options="scale_down")
+  kable() %>% kable_styling(latex_options="scale_down") %>%
+kable_styling(latex_options = "HOLD_position")
 ```
+
+Ayton is the lone 5-year prediction in the entire test set for both models, but Miles Bridges pips him in total value even with only contracts predicted for 4 years. Simons follows in Gary Trent Jr's footsteps from last year in that he's a Portland guard capable of scoring in bunches who had a mini-breakout but only played 70% of his contract year games (Gary was traded to Toronto in his contract year). I'm confident in saying that Simons, much like GTJ last year, will eclipse his projections. 
 
 ```{r rfas_five_to_ten,echo=FALSE}
 non_options %>% filter(type=="RFA") %>% select(-type) %>% slice(6:10) %>% 
-  kable() %>% kable_styling(latex_options="scale_down")
+  kable() %>% kable_styling(latex_options="scale_down") %>%
+kable_styling(latex_options = "HOLD_position")
 ```
+
+The Martin twins (Cody stayed in Charlotte with the Hornets, while Caleb moved south to Miami) also have extremely similar projections, differing by 0.14% or \$`r round(0.0014*122.414,digits=2)`M at most!
 
 On to the unrestricted free agents.
 ```{r ufas_top_five,echo=FALSE}
 non_options %>% filter(type=="UFA") %>% select(-type) %>% slice(1:5) %>% 
-  kable() %>% kable_styling(latex_options="scale_down")
+  kable() %>% kable_styling(latex_options="scale_down") %>%
+kable_styling(latex_options = "HOLD_position")
 ```
-
+LaVine is the crown jewel of this class, and it shows with him holding the highest average prediction of first-year-percent-of-cap across guaranteed free agents. Brunson's star-making turn in the playoffs has increased interest in his services around the league. Harrell has now played for 4 teams in 3 years: he is a known quantity at this point, ~25 minutes a game of efficient offense (he has shot better than 60% from the field in all but one season in his career) and passable to below-average defense.
 ```{r ufas_mid_five,echo=FALSE}
 non_options %>% filter(type=="UFA") %>% select(-type) %>% slice(6:10) %>% 
-  kable() %>% kable_styling(latex_options="scale_down")
+  kable() %>% kable_styling(latex_options="scale_down") %>%
+kable_styling(latex_options = "HOLD_position")
 ```
-
+Monk was a bright spot in the Lakers' season, scoring 13.8 points per game on 47.3% shooting from the field, which were both career-highs. Tyus Jones provided a steady hand for the Memphis Grizzlies during Ja Morant's various injury absences, and might be looking for a team that can provide a more consistent starting role.
 ```{r ufas_last_five,echo=FALSE}
 non_options %>% filter(type=="UFA") %>% select(-type) %>% slice(11:15) %>% 
-  kable() %>% kable_styling(latex_options="scale_down")
+  kable() %>% kable_styling(latex_options="scale_down") %>%
+kable_styling(latex_options = "HOLD_position")
 ```
-
+Looney played his role exceedingly well in the Warriors' road to their 4th championship in 8 years, leading the team in rebounding and being defensively stout. The models don't know that Ingles tore his ACL in February of last year, but I'm still surprised that they would predict Ingles for a three-year contract considering his advanced age.
 ```{r save_as_csvs,include=FALSE}
 write_csv(options_decisions,"Options.csv")
 write_csv(non_options,"Non-Option Contracts.csv")
 ```
+
+# Conclusion
+
+Using a combination of contract year stats and last-three-years stats, we set out to predict NBA free agent contracts for the 2021 offseason. Since we had correlated targets in contract length and first year percent of salary cap, we predicted one target first and used its predictions as an input for the second target. The contract years were predicted as a classification problem, while the salary was predicted as a regression model We used six models: linear (for salary) & multinomial (for contract length) as baselines, k-nearest-neighbors, decision tree (only for predicting contract length), a random forest and a support vector machine. James Harden, Zach LaVine, Miles Bridges & Deandre Ayton are all projected to get above \$ 100 million in total contract value.
+
+The models suffer from being unable to quantify intangibles like playing reputation, team fit, within-season role changes, or willingness to take a reduced salary to be on a championship contender. The models also can't determine which team will sign which player. That highly depends on a sequence of events: if Team A signs this player, they don't have enough money to resign Player B, who then goes to Team C for less money, etc.
+
+Since there were low predictions on Beal and Kyrie, maybe I need to add some sort of "starpower indicator" like recent All-Star or All-NBA appearances to pad up the predictions. Perhaps I should have implemented a time factor or weighted recent years more heavily, as team decision makers may have gotten smarter. I didn't remove highly correlated predictors by design, as I wanted the models themselves to perform feature selection and determine what the most important variables were.
+
+Future work could include trying more models, like boosting (in which models are added sequentially, with later models in the sequence attempting to correct the errors of earlier models). Another example might be adding a draft pedigree variable, as teams might be more willing to:
+
+A.  take a chance on a player with mediocre surface-level stats, as the team could believe the player was misused and the inherent talent is still there
+B.  pay up for a player with good stats, as the high pick of the player could signal to the player's higher potential
+
+A final option might be predicting a third target: whether a contract will end in an option year. Star players are more likely to demand the last year of their contract as a player option in order to take ownership of their future.
